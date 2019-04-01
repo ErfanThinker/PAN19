@@ -1,7 +1,7 @@
 # coding=utf-8
 import codecs
 import logging
-import pprint
+import pprint as pp
 
 from nltk import *
 
@@ -48,6 +48,6 @@ test_result = vectorize_file('pan19-cross-domain-authorship-attribution-training
                              'problem00012' + os.sep + 'candidate00002' + os.sep + 'known00001.txt',
                              'it')
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-pp = pprint.PrettyPrinter(indent=4)
-pp.pprint(test_result)
+ppr = pp.PrettyPrinter(indent=4)
+ppr.pprint(test_result)
 # pp.pprint(mapping._UNIVERSAL_TAGS)
