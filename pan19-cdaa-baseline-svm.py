@@ -189,11 +189,11 @@ def main():
     parser.add_argument('-pt', type=float, default=0.1, help='probability threshold for the reject option (default=0.1')
     args = parser.parse_args()
     if not args.i:
-        args.i = '.\\pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
+        args.i = '.' + os.sep + 'pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
         # print('ERROR: The input folder is required')
         # parser.exit(1)
     if not args.o:
-        args.o = '.\\baseline_svm_out'
+        args.o = '.' + os.sep + 'baseline_svm_out'
         # print('ERROR: The output folder is required')
         # parser.exit(1)
 
