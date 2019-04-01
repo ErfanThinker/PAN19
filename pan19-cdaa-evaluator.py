@@ -171,16 +171,16 @@ def main():
                         help='Path to output files')
     args = parser.parse_args()
     if not args.i:
-        args.i = '.\\pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
+        args.i = '.' + os.sep + 'pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
         # print('ERROR: The collection path is required')
         # parser.exit(1)
     if not args.a:
-        args.a = '.\\baseline_svm_out'
+        args.a = '.' + os.sep + 'baseline_svm_out'
         # args.a = './baseline_compression_out'
         # print('ERROR: The answers folder is required')
         # parser.exit(1)
     if not args.o:
-        args.o = '.\\eval_out'
+        args.o = '.' + os.sep + 'eval_out'
         # print('ERROR: The output path is required')
         # parser.exit(1)
 

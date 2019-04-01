@@ -25,7 +25,7 @@ samples = ["Human machine interface for lab abc computer applications",
            "cómo la enfrentó, le hizo ver qué era lo que realmente tenía que hacer. El capitán que nadie veía como un jefe pero todos lo sentían como un líder, al final. Ella también lo terminó por ver así. Esa decisión, esa mirada (Vivi se sentía atravesada por ella, igual que si él hubiera cogido sus sentimientos y los hubiera leído como si de un libro se tratara) cuando sabía que había que hacer algo. La confianza infinita en sí mismo y en sus nakama."
 
            ]
-tagger = stanford_tagger.StanfordPOSTagger(".\\models\\spanish-ud.tagger", path_to_jar=".\\models\\stanford-postagger.jar")
+tagger = stanford_tagger.StanfordPOSTagger("." + os.sep + "models" + os.sep + "spanish-ud.tagger", path_to_jar="." + os.sep + "models" + os.sep + "stanford-postagger.jar")
 
 pp.pprint(tagger.tag_sents(word_tokenize(samples[-1], language="spanish")))
 
