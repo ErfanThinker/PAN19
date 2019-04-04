@@ -7,7 +7,7 @@ import json
 import multiprocessing as mp
 import os
 from collections import defaultdict
-
+import numpy as np
 from nltk import map_tag
 from nltk import word_tokenize
 
@@ -88,7 +88,8 @@ def generate_scores(problem_dir, lang):
     print('process_doc, done!')
     for train_text in train_texts:
         train_word_set.update(train_text)
-
+    train_word_set = list(train_word_set)
+    train_word_set.insert(0, ('<PAD>', 'NAP'))
     # print(train_texts)
     print(str(len(train_word_set)))
     # This will give something like this: {label_0:[text_0, text_1,...], label_1: [...] , ... }
@@ -97,6 +98,13 @@ def generate_scores(problem_dir, lang):
     # ppr.pprint(author_dict)
     print(author_dict)
 
+    word_embedding = np.zeros((len(train_word_set), len(author_dict.keys()) + 1, ))
+    for i, (label, word_tuples) in enumerate(author_dict.items()):
+        for word_tuple in word_tuples:
+            word_embedding[train_word_set.index(word_tuple), i] += 1
+    # Removing the words used only once
+    word_embedding[word_embedding == 1] = 0
+    print(word_embedding)
 
 def main():
     parser = argparse.ArgumentParser(description='PAN-19 Baseline Authorship Attribution Method')
