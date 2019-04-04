@@ -3,6 +3,7 @@ import codecs
 import logging
 import pprint as pp
 
+import numpy as np
 from nltk import *
 
 stanford_lang_models = {"en": "english-bidirectional-distsim.tagger",
@@ -17,7 +18,7 @@ lang_map = {'en': 'english',
 stanford_res_path = "." + os.sep + "models" + os.sep
 
 
-def vectorize_file(path, lang):
+def extract_pos_tags(path, lang):
     f = codecs.open(path, 'r', encoding='utf-8')
     texts = f.read()
     f.close()
@@ -32,7 +33,6 @@ def vectorize_file(path, lang):
         results = tagger.tag(word_tokenize(texts, language=lang_map[lang]))
         if lang == 'en':  # convert eng tags to universal tags
             results = [(word, map_tag('en-ptb', 'universal', tag)) for word, tag in results]
-        return results
     # else: #to process it text
     #     import treetaggerwrapper
     #     tagger = treetaggerwrapper.TreeTagger(TAGLANG=lang)
@@ -41,13 +41,39 @@ def vectorize_file(path, lang):
     #         if isinstance(element, treetaggerwrapper.Tag) :
     #             results.append((element.word, element.pos))
     # results = [(word, map_tag('es-treetagger', 'universal', tag)) for word, tag in results ]
-    return results
+    return np.asanyarray(results)
 
 
-test_result = vectorize_file('pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23' + os.sep +
+# This class creates a word -> index mapping (e.g,. "dad/pos" -> 5) and vice-versa
+# (e.g., 5 -> "dad/pos") for each language,
+class LanguageIndex():
+    def __init__(self, vocab_list):
+        self.vocab_list = vocab_list
+        self.word2idx = {}
+        self.idx2word = {}
+        self.vocab = set()
+
+        self.create_index()
+
+    def create_index(self):
+        for v, pos in self.vocab_list:
+            self.vocab.update(v + '/' + pos)
+
+        self.vocab = sorted(self.vocab)
+
+        self.word2idx['<pad>'] = 0
+        for index, word in enumerate(self.vocab):
+            self.word2idx[word] = index + 1
+
+        for word, index in self.word2idx.items():
+            self.idx2word[index] = word
+
+
+test_result = extract_pos_tags('pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23' + os.sep +
                              'problem00012' + os.sep + 'candidate00002' + os.sep + 'known00001.txt',
                              'it')
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 ppr = pp.PrettyPrinter(indent=4)
 ppr.pprint(test_result)
+print(test_result.shape)
 # pp.pprint(mapping._UNIVERSAL_TAGS)

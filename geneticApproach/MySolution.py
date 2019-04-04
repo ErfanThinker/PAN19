@@ -1,34 +1,3 @@
-# -*- coding: utf-8 -*-
-
-"""
- A baseline authorship attribution method 
- based on a character n-gram representation
- and a linear SVM classifier.
- It has a reject option to leave documents unattributed
- (when the probabilities of the two most likely training classes are too close)
- 
- Questions/comments: stamatatos@aegean.gr
-
- It can be applied to datasets of PAN-19 cross-domain authorship attribution task
- See details here: http://pan.webis.de/clef19/pan19-web/author-identification.html
- Dependencies:
- - Python 2.7 or 3.6 (we recommend the Anaconda Python distribution)
- - scikit-learn
-
- Usage from command line: 
-    > python pan19-cdaa-baseline.py -i EVALUATION-DIRECTORY -o OUTPUT-DIRECTORY [-n N-GRAM-ORDER] [-ft FREQUENCY-THRESHOLD] [-pt PROBABILITY-THRESHOLD]
- EVALUATION-DIRECTORY (str) is the main folder of a PAN-19 collection of attribution problems
- OUTPUT-DIRECTORY (str) is an existing folder where the predictions are saved in the PAN-19 format
- Optional parameters of the model:
-   N-GRAM-ORDER (int) is the length of character n-grams (default=3)
-   FREQUENCY-THRESHOLD (int) is the cutoff threshold used to filter out rare n-grams (default=5)
-   PROBABILITY-THRESHOLD (float) is the threshold for the reject option assigning test documents to the <UNK> class (default=0.1)
-                                 Let P1 and P2 be the two maximum probabilities of training classes for a test document. If P1-P2<pt then the test document is assigned to the <UNK> class.
-   
- Example:
-     > python pan19-cdaa-baseline.py -i "mydata/pan19-cdaa-development-corpus" -o "mydata/pan19-answers"
-"""
-
 from __future__ import print_function
 
 import argparse
@@ -37,7 +6,6 @@ import glob
 import json
 import multiprocessing as mp
 import os
-import shutil
 import time
 from collections import defaultdict
 
@@ -48,14 +16,16 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import SVC
 
 
-def represent_text(text, n):
-    # Extracts all character 'n'-grams from  a 'text'
-    if n > 0:
-        tokens = [text[i:i + n] for i in range(len(text) - n + 1)]
-    frequency = defaultdict(int)
-    for token in tokens:
-        frequency[token] += 1
-    return frequency
+def clean_folder(path):
+    for the_file in os.listdir(path):
+        file_path = os.path.join(path, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+            # elif os.path.isdir(file_path):
+            #     shutil.rmtree(file_path)
+        except Exception as e:
+            print(e)
 
 
 def read_files(path, label):
@@ -67,6 +37,16 @@ def read_files(path, label):
         texts.append((f.read(), label))
         f.close()
     return texts
+
+
+def represent_text(text, n):
+    # Extracts all character 'n'-grams from  a 'text'
+    if n > 0:
+        tokens = [text[i:i + n] for i in range(len(text) - n + 1)]
+    frequency = defaultdict(int)
+    for token in tokens:
+        frequency[token] += 1
+    return frequency
 
 
 def extract_vocabulary(texts, n, ft):
@@ -85,18 +65,6 @@ def extract_vocabulary(texts, n, ft):
         if occurrences[i] >= ft:
             vocabulary.append(i)
     return vocabulary
-
-
-def clean_folder(path):
-    for the_file in os.listdir(path):
-        file_path = os.path.join(path, the_file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            print(e)
 
 
 def process_problem(problem, path, n, ft, language, index, pt, outpath):
@@ -172,7 +140,7 @@ def baseline(path, outpath, n=3, ft=5, pt=0.1):
             problems.append(attrib['problem-name'])
             language.append(attrib['language'])
 
-    pool = mp.Pool(mp.cpu_count() - 2)
+    pool = mp.Pool(mp.cpu_count() - 3)
     for index, problem in enumerate(problems):
         pool.apply_async(process_problem, args=(problem, path, n, ft, language, index, pt, outpath))
 
@@ -191,11 +159,11 @@ def main():
     parser.add_argument('-pt', type=float, default=0.1, help='probability threshold for the reject option (default=0.1')
     args = parser.parse_args()
     if not args.i:
-        args.i = '.' + os.sep + 'pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
+        args.i = '.\\pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
         # print('ERROR: The input folder is required')
         # parser.exit(1)
     if not args.o:
-        args.o = '.' + os.sep + 'baseline_svm_out'
+        args.o = '.\\ms_out'
         # print('ERROR: The output folder is required')
         # parser.exit(1)
 
