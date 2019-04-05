@@ -1,4 +1,5 @@
 # coding=utf-8
+import tensorflow as tf
 # import logging
 # from keras import models
 # from keras import layers
@@ -26,3 +27,5 @@ print(scaled_train_data)
 print(scaled_train_data.mean(axis=0))
 print(a.mean(axis=0))
 print(a.std(axis=0))
+
+print(tf.__version)
