@@ -50,6 +50,7 @@ test_docs = read_files(dataset_path + os.sep + problem, unk_folder, gt)
 test_texts = [text for i, (text, label) in enumerate(test_docs)]
 test_labels = [label for i, (text, label) in enumerate(test_docs)]
 print(gt)
-from keras import optimizers
+from keras import layers
 
-optimizers.Adadelta
+layers.Conv1D(32, 3, activation='relu')
+layers.GlobalMaxPooling1D()

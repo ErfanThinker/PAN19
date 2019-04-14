@@ -44,11 +44,14 @@ Example:
 """
 
 import argparse
-import os
 import json
+import os
 import warnings
+
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
 from sklearn.preprocessing import LabelEncoder
+
+
 def eval_measures(gt, pred):
     """Compute macro-averaged F1-scores, macro-averaged precision, 
     macro-averaged recall, and micro-averaged accuracy according the ad hoc
@@ -121,7 +124,7 @@ def eval_measures(gt, pred):
         accuracy = accuracy_score(gold_author_ints,
                   silver_author_ints)
 
-    return f1,precision,recall
+    return f1, precision, recall, accuracy
 
 def evaluate(ground_truth_file,predictions_file):
     # Calculates evaluation measures for a single attribution problem
@@ -135,8 +138,8 @@ def evaluate(ground_truth_file,predictions_file):
         for attrib in json.load(f):
             if attrib['unknown-text'] not in pred:
                 pred[attrib['unknown-text']] = attrib['predicted-author']
-    f1,precision,recall =  eval_measures(gt,pred)
-    return round(f1,3), round(precision,3), round(recall,3)
+    f1, precision, recall, accuracy = eval_measures(gt, pred)
+    return round(f1, 3), round(precision, 3), round(recall, 3), round(accuracy, 3)
 
 def evaluate_all(path_collection,path_answers,path_out):
     # Calculates evaluation measures for a PAN-18 collection of attribution problems
@@ -148,10 +151,11 @@ def evaluate_all(path_collection,path_answers,path_out):
             problems.append(attrib['problem-name'])
     scores=[]
     for problem in problems:
-        f1,precision,recall=evaluate(path_collection+os.sep+problem+os.sep+'ground-truth.json',path_answers+os.sep+'answers-'+problem+'.json')
+        f1, precision, recall, accuracy = evaluate(path_collection + os.sep + problem + os.sep + 'ground-truth.json',
+                                                   path_answers + os.sep + 'answers-' + problem + '.json')
         scores.append(f1)
         data.append({'problem-name': problem, 'macro-f1': round(f1,3), 'macro-precision': round(precision,3), 'macro-recall': round(recall,3)})
-        print(str(problem),'Macro-F1:',round(f1,3))
+        print(str(problem), 'Macro-F1:', round(f1, 3), 'Accuracy:', round(accuracy, 3))
     overall_score=sum(scores)/len(scores)
     # Saving data to output files (out.json and evaluation.prototext)
     with open(path_out+os.sep+'out.json', 'w') as f:
