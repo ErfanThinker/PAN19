@@ -1,16 +1,70 @@
 # coding=utf-8
 import json
-
-import matplotlib.pyplot as plt
-from keras.layers import Embedding, Flatten, Dense
-from keras.models import Sequential
-from keras.utils import to_categorical
-from keras_preprocessing.sequence import pad_sequences
-from nltk import *
-from sklearn.model_selection import train_test_split
+import os
 
 from MyUtils import clean_folder, read_files
 from Word2Dim import Word2Dim
+
+
+def do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim, maxlen):
+    from keras.layers import Embedding, Flatten, Dense
+    from keras.models import Sequential
+    from keras.optimizers import RMSprop
+    from keras.utils import to_categorical
+    from keras_preprocessing.sequence import pad_sequences
+    import matplotlib.pyplot as plt
+    # from sklearn.model_selection import train_test_split
+
+    train_data = pad_sequences(train_tokenized_indexed, maxlen=maxlen)
+
+    test_data = pad_sequences(test_tokenized_indexed, maxlen=maxlen)
+
+    X_train, X_val, y_train, y_val = train_data, test_data, to_categorical(train_labels), to_categorical(test_labels)
+    # X_train, X_val, y_train, y_val = train_test_split(train_data, train_labels,
+    #                                                   test_size=0.28, random_state=2019,
+    #                                                   stratify=train_labels)
+
+    # y_train = to_categorical(y_train)
+    # y_val = to_categorical(y_val)
+
+    model = Sequential()
+    model.add(Embedding(w2d.word_embedding.shape[0], embedding_dim, input_length=maxlen))
+    model.add(Flatten())
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(len(set(train_labels)), activation='softmax'))
+    model.summary()
+
+    # model.layers[0].set_weights([w2d.word_embedding])
+    # model.layers[0].trainable = False
+
+    model.compile(optimizer=RMSprop(lr=0.001),
+                  loss='categorical_crossentropy',
+                  metrics=['acc'])
+    history = model.fit(X_train, y_train,
+                        validation_data=(X_val, y_val),
+                        epochs=120,
+                        batch_size=1)
+
+    acc = history.history['acc']
+    val_acc = history.history['val_acc']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(acc) + 1)
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend()
+
+    plt.figure()
+
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend()
+
+    plt.show()
 
 
 def main():
@@ -51,12 +105,16 @@ def main():
                                                                                     language[index])
 
         maxlen = len(max(train_tokenized_indexed, key=len))  # We will cut the texts after # words
-        train_data = pad_sequences(train_tokenized_indexed, maxlen=maxlen)
-
         embedding_dim = w2d.word_embedding.shape[1]
 
         # preparing test set
-        test_docs = read_files(dataset_path + os.sep + problem, unk_folder)
+        ground_truth_file = dataset_path + os.sep + problem + os.sep + 'ground-truth.json'
+        gt = {}
+        with open(ground_truth_file, 'r') as f:
+            for attrib in json.load(f)['ground_truth']:
+                gt[attrib['unknown-text']] = attrib['true-author']
+
+        test_docs = read_files(dataset_path + os.sep + problem, unk_folder, gt)
         test_texts = [text for i, (text, label) in enumerate(test_docs)]
         test_labels = [label for i, (text, label) in enumerate(test_docs)]
 
@@ -67,54 +125,8 @@ def main():
         test_labels = sorted([label_2_index_dict[v] for v in test_labels])
 
         test_tokenized_with_pos, test_tokenized_indexed = w2d.transform(test_texts)
-        test_data = pad_sequences(test_tokenized_indexed, maxlen=maxlen)
 
-        X_train, X_val, y_train, y_val = train_data, test_data, to_categorical(train_labels), to_categorical(test_labels)
-        # X_train, X_val, y_train, y_val = train_test_split(train_data, train_labels,
-        #                                                   test_size=0.28, random_state=2019,
-        #                                                   stratify=train_labels)
-
-        # y_train = to_categorical(y_train)
-        # y_val = to_categorical(y_val)
-
-        model = Sequential()
-        model.add(Embedding(w2d.word_embedding.shape[0], embedding_dim, input_length=maxlen))
-        model.add(Flatten())
-        model.add(Dense(32, activation='relu'))
-        model.add(Dense(len(set(train_labels)), activation='softmax'))
-        model.summary()
-
-        model.layers[0].set_weights([w2d.word_embedding])
-        # model.layers[0].trainable = False
-
-        model.compile(optimizer='rmsprop',
-                      loss='categorical_crossentropy',
-                      metrics=['acc'])
-        history = model.fit(X_train, y_train,
-                            validation_data=(X_val, y_val),
-                            epochs=120,
-                            batch_size=1)
-
-        acc = history.history['acc']
-        val_acc = history.history['val_acc']
-        loss = history.history['loss']
-        val_loss = history.history['val_loss']
-
-        epochs = range(1, len(acc) + 1)
-
-        plt.plot(epochs, acc, 'bo', label='Training acc')
-        plt.plot(epochs, val_acc, 'b', label='Validation acc')
-        plt.title('Training and validation accuracy')
-        plt.legend()
-
-        plt.figure()
-
-        plt.plot(epochs, loss, 'bo', label='Training loss')
-        plt.plot(epochs, val_loss, 'b', label='Validation loss')
-        plt.title('Training and validation loss')
-        plt.legend()
-
-        plt.show()
+        do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim, maxlen)
 
 
 if __name__ == '__main__':

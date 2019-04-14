@@ -40,6 +40,8 @@ class Word2Dim(object):
 
         pool = mp.Pool(int(mp.cpu_count() / 2) - 1)
         train_texts_plus = pool.map(process_doc, train_texts_plus)
+        pool.close()
+
         print('process_doc, done!')
         for train_text in train_texts_plus:
             train_word_set.update(train_text)
@@ -75,11 +77,13 @@ class Word2Dim(object):
         return train_texts_plus, tokenized_and_indexed
 
     def transform(self, texts):
+        print("doc count to process: ", str(len(texts)))
         texts_plus = [(text, self.lang, i) for i, text in enumerate(texts)]
         pool = mp.Pool(int(mp.cpu_count() / 2) - 1)
         texts_plus = pool.map(process_doc, texts_plus)
+        pool.close()
         tokenized_and_indexed = []
-        ignore_index = len(self.word_index) + 1
+        ignore_index = 0
         for text_plus in texts_plus:
             tokenized_and_indexed.append([self.word_index[word_pos_tuple] if word_pos_tuple in self.word_index.keys()
                                           else ignore_index for i, word_pos_tuple in

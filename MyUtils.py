@@ -41,13 +41,15 @@ class LanguageIndex():
         for word, index in self.word2idx.items():
             self.idx2word[index] = word
 
-def read_files(path, label):
+def read_files(path, label, gt_dict= None):
     # Reads all text files located in the 'path' and assigns them to 'label' class
     files = glob.glob(path + os.sep + label + os.sep + '*.txt')
     files.sort()
     texts = []
     for i, v in enumerate(files):
         f = codecs.open(v, 'r', encoding='utf-8')
+        file_name = v.rsplit(os.sep, maxsplit=1)[1]
+        label = label if gt_dict is None else gt_dict[file_name]
         texts.append((f.read(), label))
         f.close()
     return texts
