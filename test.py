@@ -1,34 +1,55 @@
 # coding=utf-8
-import tensorflow as tf
+import json
+import os
+
+from MyUtils import read_files
+
 # import logging
 # from keras import models
 # from keras import layers
 # from keras import Input
-from collections import defaultdict
-import numpy as np
-from sklearn import preprocessing
 
+dataset_path = '.' + os.sep + 'pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
+outpath = '.' + os.sep + 'dev_out'
 
-def tuple_list_2_dict(da_list):
-    out = defaultdict(list)
-    for val in da_list:
-        out[val[1]].append(val[0])
-    return out
+infocollection = dataset_path + os.sep + 'collection-info.json'
+problems = []
+language = []
+with open(infocollection, 'r') as f:
+    for attrib in json.load(f):
+        problems.append(attrib['problem-name'])
+        language.append(attrib['language'])
 
+index, problem = 0, problems[0]
+infoproblem = dataset_path + os.sep + problem + os.sep + 'problem-info.json'
+candidates = []
+with open(infoproblem, 'r') as f:
+    fj = json.load(f)
+    unk_folder = fj['unknown-folder']
+    for attrib in fj['candidate-authors']:
+        candidates.append(attrib['author-name'])
+candidates.sort()
 
-my_list = [(1, 'a'), (2, 'b'), (3, 'a'), (4, 'b')]
-print(tuple_list_2_dict(my_list))
+# Building training set
+train_docs = []
+for candidate in candidates:
+    train_docs.extend(read_files(dataset_path + os.sep + problem, candidate))
+train_texts = [text for i, (text, label) in enumerate(train_docs)]
+train_labels = [label for i, (text, label) in enumerate(train_docs)]
+index_2_label_dict = {i: l for i, l in enumerate(set(train_labels))}
+label_2_index_dict = {l: i for i, l in enumerate(set(train_labels))}
+train_labels = sorted([label_2_index_dict[v] for v in train_labels])
 
-a = np.array([[1, 2, 3],
-              [1, 5, 6],
-              [1, 7, 9]])
-scaled_train_data = preprocessing.maxabs_scale(a[:-1, ], axis=0)
-print(scaled_train_data)
-print(scaled_train_data.mean(axis=0))
-print(a.mean(axis=0))
-print(a.std(axis=0))
+ground_truth_file = dataset_path + os.sep + problem + os.sep + 'ground-truth.json'
+gt = {}
+with open(ground_truth_file, 'r') as f:
+    for attrib in json.load(f)['ground_truth']:
+        gt[attrib['unknown-text']] = attrib['true-author']
 
-print(tf.VERSION)
+test_docs = read_files(dataset_path + os.sep + problem, unk_folder, gt)
+test_texts = [text for i, (text, label) in enumerate(test_docs)]
+test_labels = [label for i, (text, label) in enumerate(test_docs)]
+print(gt)
+from keras import optimizers
 
-t = {'a': 1, 'b': 5}
-print(max(t.values()))
+optimizers.Adadelta

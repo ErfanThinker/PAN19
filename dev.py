@@ -99,7 +99,7 @@ def main():
         train_labels = [label for i, (text, label) in enumerate(train_docs)]
         index_2_label_dict = {i: l for i, l in enumerate(set(train_labels))}
         label_2_index_dict = {l: i for i, l in enumerate(set(train_labels))}
-        train_labels = sorted([label_2_index_dict[v] for v in train_labels])
+        train_labels = [label_2_index_dict[v] for v in train_labels]
         w2d = Word2Dim()
         train_tokenized_with_pos, train_tokenized_indexed = w2d.fit_transform_texts(train_texts, train_labels,
                                                                                     language[index])
@@ -122,7 +122,7 @@ def main():
         test_texts = [text for i, (text, label) in enumerate(test_docs) if label in label_2_index_dict.keys()]
         test_labels = [label for i, (text, label) in enumerate(test_docs) if label in label_2_index_dict.keys()]
 
-        test_labels = sorted([label_2_index_dict[v] for v in test_labels])
+        test_labels = [label_2_index_dict[v] for v in test_labels]
 
         test_tokenized_with_pos, test_tokenized_indexed = w2d.transform(test_texts)
 
