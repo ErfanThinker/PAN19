@@ -1,28 +1,21 @@
 from __future__ import print_function
-import os
+
+import argparse
+import codecs
 import glob
 import json
-import argparse
+import multiprocessing as mp
+import os
 import time
-import codecs
 from collections import defaultdict
-from sklearn.svm import SVC
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.feature_extraction.text import CountVectorizer
+
 from sklearn import preprocessing
 from sklearn.calibration import CalibratedClassifierCV
-import multiprocessing as mp
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import SVC
 
-def clean_folder(path):
-    for the_file in os.listdir(path):
-        file_path = os.path.join(path, the_file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-            # elif os.path.isdir(file_path):
-            #     shutil.rmtree(file_path)
-        except Exception as e:
-            print(e)
+from MyUtils import clean_folder
 
 
 def read_files(path, label):

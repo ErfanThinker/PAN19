@@ -28,4 +28,7 @@ print(scaled_train_data.mean(axis=0))
 print(a.mean(axis=0))
 print(a.std(axis=0))
 
-print(tf.__version)
+print(tf.VERSION)
+
+t = {'a': 1, 'b': 5}
+print(max(t.values()))
