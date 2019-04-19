@@ -11,12 +11,13 @@ from MyUtils import process_doc
 
 class Word2Dim(object):
 
-    def __init__(self, num_words=None, dims=-1):
+    def __init__(self, num_words=None, ignore_index=0, dims=-1):
         self.dims = dims
         self.word_embedding = None
         self.word_index = dict()
         self.num_words = num_words
         self.lang = ''
+        self.ignore_index = ignore_index
 
     def __tuple_list_2_dict(self, da_list):
         out = defaultdict(list)
@@ -32,10 +33,13 @@ class Word2Dim(object):
         # sort on author names (keys) before returning
         return OrderedDict(sorted(out.items(), key=lambda t: t[0]))
 
-    def fit_transform_texts(self, train_texts, train_labels, lang):
+    def __get_word_index(self, word_tuple):
+        return self.word_index[word_tuple] if word_tuple in self.word_index.keys() else self.ignore_index
+
+    def fit_transform_texts(self, train_texts, train_labels, lang, tf=None):
         self.lang = lang
         train_texts_plus = [(text, lang, i) for i, text in enumerate(train_texts)]
-        train_word_set = set()
+        train_word_set = list()
         print("doc count to process: ", str(len(train_texts_plus)))
 
         pool = mp.Pool(int(mp.cpu_count() / 2) - 1)
@@ -44,7 +48,10 @@ class Word2Dim(object):
 
         print('process_doc, done!')
         for train_text in train_texts_plus:
-            train_word_set.update(train_text)
+            train_word_set.extend(train_text)
+
+        train_word_set = set([v for v in train_word_set if tf and train_word_set.count(v) >= tf])
+
 
         self.word_index = {v: i + 1 for i, v in enumerate(train_word_set)}
         # train_word_set.insert(0, ('<pad>', 'NAP'))
@@ -58,7 +65,8 @@ class Word2Dim(object):
         # author_dict is sorted on author names so the index will work out
         for index, (label, word_tuples) in enumerate(author_dict.items()):
             for word_tuple in word_tuples:
-                word_embedding[self.word_index[word_tuple], index] += 1
+                if word_tuple in self.word_index:
+                    word_embedding[self.word_index[word_tuple], index] += 1
         # Removing the words used only once
         # word_embedding[word_embedding == 1] = 0
 
@@ -72,7 +80,7 @@ class Word2Dim(object):
         self.word_embedding = word_embedding
         tokenized_and_indexed = []
         for train_text_plus in train_texts_plus:
-            tokenized_and_indexed.append([self.word_index[word_pos_tuple] for i, word_pos_tuple in
+            tokenized_and_indexed.append([self.__get_word_index(word_pos_tuple) for i, word_pos_tuple in
                                           enumerate(train_text_plus)])
         return train_texts_plus, tokenized_and_indexed
 
@@ -83,9 +91,8 @@ class Word2Dim(object):
         texts_plus = pool.map(process_doc, texts_plus)
         pool.close()
         tokenized_and_indexed = []
-        ignore_index = 0
+
         for text_plus in texts_plus:
-            tokenized_and_indexed.append([self.word_index[word_pos_tuple] if word_pos_tuple in self.word_index.keys()
-                                          else ignore_index for i, word_pos_tuple in
+            tokenized_and_indexed.append([self.__get_word_index(word_pos_tuple) for i, word_pos_tuple in
                                           enumerate(text_plus)])
         return texts_plus, tokenized_and_indexed

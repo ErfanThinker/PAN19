@@ -1,6 +1,7 @@
 import codecs
 import glob
 import os
+from collections import defaultdict
 
 from nltk import word_tokenize, map_tag
 
@@ -83,3 +84,31 @@ def clean_folder(path):
             #     shutil.rmtree(file_path)
         except Exception as e:
             print(e)
+
+
+def represent_text(text, n):
+    # Extracts all character 'n'-grams from  a 'text'
+    if n > 0:
+        tokens = [text[i:i + n] for i in range(len(text) - n + 1)]
+    frequency = defaultdict(int)
+    for token in tokens:
+        frequency[token] += 1
+    return frequency
+
+
+def extract_n_grams(texts, n, ft):
+    # Extracts all characer 'n'-grams occurring at least 'ft' times in a set of 'texts'
+    occurrences = defaultdict(int)
+    for (text, label) in texts:
+        text_occurrences = represent_text(text, n)
+        for ngram in text_occurrences:
+            occurrences[ngram] += text_occurrences[ngram]
+            # if ngram in occurrences:
+            #     occurrences[ngram]+=text_occurrences[ngram]
+            # else:
+            #     occurrences[ngram]=text_occurrences[ngram]
+    vocabulary = []
+    for i in occurrences.keys():
+        if occurrences[i] >= ft:
+            vocabulary.append(i)
+    return vocabulary

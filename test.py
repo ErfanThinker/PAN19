@@ -8,7 +8,9 @@ from MyUtils import read_files
 # from keras import models
 # from keras import layers
 # from keras import Input
-
+tf = 1
+if tf:
+    print("alaki")
 dataset_path = '.' + os.sep + 'pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
 outpath = '.' + os.sep + 'dev_out'
 
