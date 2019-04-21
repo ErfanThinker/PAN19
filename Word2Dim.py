@@ -2,12 +2,18 @@ from __future__ import print_function
 
 import multiprocessing as mp
 from collections import defaultdict, OrderedDict
+from enum import Enum
 
 import numpy as np
 from sklearn import preprocessing
 
 from MyUtils import process_doc
 
+
+class WordEmbeddingMode(Enum):
+    Normal = 0,
+    Scaled = 1,
+    # NormalizedVectorized = 2
 
 class Word2Dim(object):
 
@@ -50,7 +56,10 @@ class Word2Dim(object):
         for train_text in train_texts_plus:
             train_word_set.extend(train_text)
 
-        train_word_set = set([v for v in train_word_set if tf and train_word_set.count(v) >= tf])
+        if tf:
+            train_word_set = set([v for v in train_word_set if train_word_set.count(v) >= tf])
+        else:
+            train_word_set = set(train_word_set)
 
 
         self.word_index = {v: i + 1 for i, v in enumerate(train_word_set)}
@@ -75,13 +84,14 @@ class Word2Dim(object):
         #     if np.mean(vector[:-1]) > 2:
         #         vector[-1] = np.sum(vector)
 
-        max_abs_scaler = preprocessing.MaxAbsScaler()
-        word_embedding = max_abs_scaler.fit_transform(word_embedding)
+
         self.word_embedding = word_embedding
+
         tokenized_and_indexed = []
         for train_text_plus in train_texts_plus:
             tokenized_and_indexed.append([self.__get_word_index(word_pos_tuple) for i, word_pos_tuple in
                                           enumerate(train_text_plus)])
+
         return train_texts_plus, tokenized_and_indexed
 
     def transform(self, texts):
@@ -96,3 +106,27 @@ class Word2Dim(object):
             tokenized_and_indexed.append([self.__get_word_index(word_pos_tuple) for i, word_pos_tuple in
                                           enumerate(text_plus)])
         return texts_plus, tokenized_and_indexed
+
+    def get_word_embedding(self, mode=WordEmbeddingMode.Normal):
+        if mode == WordEmbeddingMode.Normal:
+            return self.word_embedding
+
+        elif mode == WordEmbeddingMode.Scaled:
+            max_abs_scaler = preprocessing.MaxAbsScaler()
+            return max_abs_scaler.fit_transform(self.word_embedding)
+
+        else:
+            raise ValueError('Provided mode value is not supported.')
+
+    def get_texts_vectorized_and_normalized(self, tokenized_and_indexed_texts):
+        data = np.zeros((len(tokenized_and_indexed_texts), self.word_embedding.shape[0],), dtype='float32')
+        # print(self.word_index.keys())
+        for text_ind, tokenized_and_indexed_text in enumerate(tokenized_and_indexed_texts):
+            text_length = len(tokenized_and_indexed_text)
+            counts = defaultdict(float)
+            for i in tokenized_and_indexed_text:
+                counts[i] += 1
+            for word_index, word_count in counts.items():
+                data[text_ind, word_index] = word_count / text_length
+
+        return data
