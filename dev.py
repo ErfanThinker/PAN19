@@ -2,11 +2,94 @@
 import json
 import os
 
+from keras import Model
+from keras.layers import Dense, concatenate
+from keras.models import load_model
+from keras.utils import to_categorical
+from numpy import dstack
+
 from MyUtils import clean_folder, read_files
 from Word2Dim import Word2Dim
 
 
-def do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim, maxlen):
+# load models from file
+def load_all_models(n_models):
+    all_models = list()
+    for i in range(n_models):
+        # define filename for this ensemble
+        filename = 'models/model_' + str(i + 1) + '.h5'
+        # load model from file
+        model = load_model(filename)
+        # add to list of members
+        all_models.append(model)
+        print('>loaded %s' % filename)
+    return all_models
+
+
+# create stacked model input dataset as outputs from the ensemble
+def stacked_dataset(members, inputX):
+    stackX = None
+    for model in members:
+        # make prediction
+        yhat = model.predict(inputX, verbose=0)
+        # stack predictions into [rows, members, probabilities]
+        if stackX is None:
+            stackX = yhat
+        else:
+            stackX = dstack((stackX, yhat))
+    # flatten predictions to [rows, members x probabilities]
+    stackX = stackX.reshape((stackX.shape[0], stackX.shape[1] * stackX.shape[2]))
+    return stackX
+
+
+def freeze_layers(models):
+    # update all layers in all models to not be trainable
+    for i in range(len(models)):
+        model = models[i]
+        for layer in model.layers:
+            # make not trainable
+            layer.trainable = False
+            # rename to avoid 'unique layer name' issue
+            layer.name = 'ensemble_' + str(i + 1) + '_' + layer.name
+
+
+# define stacked model from multiple member input models
+def define_stacked_model(members):
+    # update all layers in all models to not be trainable
+    for i in range(len(members)):
+        model = members[i]
+        for layer in model.layers:
+            # make not trainable
+            layer.trainable = False
+            # rename to avoid 'unique layer name' issue
+            layer.name = 'ensemble_' + str(i + 1) + '_' + layer.name
+    # define multi-headed input
+    ensemble_visible = [model.input for model in members]
+    # concatenate merge output from each model
+    ensemble_outputs = [model.output for model in members]
+    merge = concatenate(ensemble_outputs)
+    hidden = Dense(10, activation='relu')(merge)
+    output = Dense(3, activation='softmax')(hidden)
+    model = Model(inputs=ensemble_visible, outputs=output)
+    # plot graph of ensemble
+    # plot_model(model, show_shapes=True, to_file='model_graph.png')
+    # compile
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
+
+
+# fit a stacked model
+def fit_stacked_model(model, inputX, inputy):
+    # prepare input data
+    X = [inputX for _ in range(len(model.input))]
+    # encode output data
+    inputy_enc = to_categorical(inputy)
+    # fit model
+    model.fit(X, inputy_enc, epochs=300, verbose=0)
+
+
+def do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim,
+                   maxlen):
     from keras.layers import Embedding, Flatten, Dense
     from keras.models import Sequential
     from keras.optimizers import RMSprop
@@ -126,7 +209,8 @@ def main():
 
         test_tokenized_with_pos, test_tokenized_indexed = w2d.transform(test_texts)
 
-        do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim, maxlen)
+        do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim,
+                       maxlen)
 
 
 if __name__ == '__main__':
