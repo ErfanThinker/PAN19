@@ -7,7 +7,8 @@ from enum import Enum
 import numpy as np
 from sklearn import preprocessing
 from contextlib import closing
-from MyUtils import process_doc
+from MyUtils import process_doc, stanford_res_path, stanford_lang_models
+import nltk.tag.stanford as stanford_tagger
 
 
 class WordEmbeddingMode(Enum):
@@ -18,13 +19,18 @@ class WordEmbeddingMode(Enum):
 
 class Word2Dim(object):
 
-    def __init__(self, num_words=None, ignore_index=0, dims=-1):
+    def __init__(self, lang='en', num_words=None, ignore_index=0, dims=-1):
         self.dims = dims
         self.word_embedding = None
         self.word_index = dict()
         self.num_words = num_words
-        self.lang = ''
+        self.lang = lang
         self.ignore_index = ignore_index
+        if lang in stanford_lang_models:
+            self.tagger = stanford_tagger.StanfordPOSTagger(stanford_res_path + stanford_lang_models[lang],
+                                                            path_to_jar=stanford_res_path + "stanford-postagger.jar")
+        else:
+            raise ValueError("This lang is not supported!")
 
     def __tuple_list_2_dict(self, da_list):
         out = defaultdict(list)
@@ -43,9 +49,8 @@ class Word2Dim(object):
     def __get_word_index(self, word_tuple):
         return self.word_index[word_tuple] if word_tuple in self.word_index.keys() else self.ignore_index
 
-    def fit_transform_texts(self, train_texts, train_labels, lang, tf=None):
-        self.lang = lang
-        train_texts_plus = [(text, lang, i) for i, text in enumerate(train_texts)]
+    def fit_transform_texts(self, train_texts, train_labels, tf=None):
+        train_texts_plus = [(text, self.lang, self.tagger, i) for i, text in enumerate(train_texts)]
         train_word_set = list()
         print("doc count to process: ", str(len(train_texts_plus)))
 
@@ -109,7 +114,7 @@ class Word2Dim(object):
 
     def transform(self, texts):
         print("doc count to process: ", str(len(texts)))
-        texts_plus = [(text, self.lang, i) for i, text in enumerate(texts)]
+        texts_plus = [(text, self.lang, self.tagger, i) for i, text in enumerate(texts)]
 
         pool_size = int(mp.cpu_count() / 2) - 1
 
