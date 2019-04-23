@@ -3,12 +3,10 @@ from __future__ import print_function
 import multiprocessing as mp
 from collections import defaultdict, OrderedDict
 from enum import Enum
-
 import numpy as np
+from time import sleep
 from sklearn import preprocessing
-from contextlib import closing
-from MyUtils import process_doc, stanford_res_path, stanford_lang_models
-import nltk.tag.stanford as stanford_tagger
+from MyUtils import process_doc
 
 
 class WordEmbeddingMode(Enum):
@@ -26,11 +24,6 @@ class Word2Dim(object):
         self.num_words = num_words
         self.lang = lang
         self.ignore_index = ignore_index
-        if lang in stanford_lang_models:
-            self.tagger = stanford_tagger.StanfordPOSTagger(stanford_res_path + stanford_lang_models[lang],
-                                                            path_to_jar=stanford_res_path + "stanford-postagger.jar")
-        else:
-            raise ValueError("This lang is not supported!")
 
     def __tuple_list_2_dict(self, da_list):
         out = defaultdict(list)
@@ -50,12 +43,16 @@ class Word2Dim(object):
         return self.word_index[word_tuple] if word_tuple in self.word_index.keys() else self.ignore_index
 
     def fit_transform_texts(self, train_texts, train_labels, tf=None):
-        train_texts_plus = [(text, self.lang, self.tagger, i) for i, text in enumerate(train_texts)]
+        train_texts_plus = [(text, self.lang, i) for i, text in enumerate(train_texts)]
         train_word_set = list()
         print("doc count to process: ", str(len(train_texts_plus)))
 
         pool_size = int(mp.cpu_count() / 2) - 1
-
+        # pool_size = min(3, int(mp.cpu_count() / 2) - 1)
+        # pool = mp.Pool(pool_size, maxtasksperchild=1)
+        # train_texts_plus = pool.map(process_doc, train_texts_plus)
+        # pool.close()
+        # pool.join()
         # java.lang.OutOfMemoryError: Java heap space for large number of docs
         # mp.set_start_method('spawn')
         # pool = mp.Pool(pool_size,  maxtasksperchild=1)
@@ -72,14 +69,16 @@ class Word2Dim(object):
         # pool.close()
         # temp = []
 
-        for doc in temp:
-            train_texts_plus.append(process_doc(doc))
+        # for doc in temp:
+        #     train_texts_plus.append(process_doc(doc))
         #
-        # for list_slice_ind in range(0, len(temp), pool_size):
-        #     pool = mp.Pool(pool_size, maxtasksperchild=1)
-        #     train_texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
-        #     pool.terminate()
-        # assert len(train_texts_plus) == len(temp)
+        for list_slice_ind in range(0, len(temp), pool_size):
+            pool = mp.Pool(pool_size, maxtasksperchild=1)
+            train_texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+            pool.close()
+            pool.join()
+            sleep(1)
+        assert len(train_texts_plus) == len(temp)
 
         print('process_doc, done!')
         for train_text in train_texts_plus:
@@ -123,7 +122,14 @@ class Word2Dim(object):
 
     def transform(self, texts):
         print("doc count to process: ", str(len(texts)))
-        texts_plus = [(text, self.lang, self.tagger, i) for i, text in enumerate(texts)]
+        texts_plus = [(text, self.lang, i) for i, text in enumerate(texts)]
+
+        pool_size = int(mp.cpu_count() / 2) - 1
+        # pool_size = min(3, int(mp.cpu_count() / 2) - 1)
+        # pool = mp.Pool(pool_size, maxtasksperchild=1)
+        # texts_plus = pool.map(process_doc, texts_plus)
+        # pool.close()
+        # pool.join()
 
         # pool_size = int(mp.cpu_count() / 2) - 1
 
@@ -138,16 +144,17 @@ class Word2Dim(object):
         # pool.close()
         # temp = []
 
-
-        # for list_slice_ind in range(0, len(temp), pool_size):
-        #     pool = mp.Pool(pool_size, maxtasksperchild=1)
-        #     texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
-        #     pool.terminate()
-        # assert len(texts_plus) == len(temp)
+        for list_slice_ind in range(0, len(temp), pool_size):
+            pool = mp.Pool(pool_size, maxtasksperchild=1)
+            texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+            pool.close()
+            pool.join()
+            sleep(1)
+        assert len(texts_plus) == len(temp)
         #
         #
-        for doc in temp:
-            texts_plus.append(process_doc(doc))
+        # for doc in temp:
+        #     texts_plus.append(process_doc(doc))
 
         tokenized_and_indexed = []
 
