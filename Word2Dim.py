@@ -66,10 +66,9 @@ class Word2Dim(object):
         train_texts_plus = []
 
         for list_slice_ind in range(0, len(temp), pool_size):
-            # pool = mp.Pool(pool_size, maxtasksperchild=1)
-            with closing(mp.Pool(pool_size)) as p:
-                train_texts_plus.extend(p.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
-            # pool.close()
+            pool = mp.Pool(pool_size, maxtasksperchild=1)
+            train_texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+            pool.terminate()
         assert len(train_texts_plus) == len(temp)
 
         print('process_doc, done!')
@@ -127,10 +126,9 @@ class Word2Dim(object):
         texts_plus = []
 
         for list_slice_ind in range(0, len(temp), pool_size):
-            # pool = mp.Pool(pool_size, maxtasksperchild=1)
-            with closing(mp.Pool(pool_size)) as p:
-                texts_plus.extend(p.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
-            # pool.close()
+            pool = mp.Pool(pool_size, maxtasksperchild=1)
+            texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+            pool.terminate()
         assert len(texts_plus) == len(temp)
         #
         #
