@@ -69,8 +69,8 @@ def extract_words_plus_pos_tags(texts, lang):
         tagger = stanford_tagger.StanfordPOSTagger(stanford_res_path + stanford_lang_models[lang],
                                                    path_to_jar=stanford_res_path + "stanford-postagger.jar", java_options='-mx3g')
         results = tagger.tag(word_tokenize(texts, language=lang_map[lang]))
-        del tagger
-        del stanford_tagger
+        # del tagger
+        # del stanford_tagger
         if lang == 'en':  # convert eng tags to universal tags
             results = [(word, map_tag('en-ptb', 'universal', tag)) for word, tag in results]
 
