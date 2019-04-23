@@ -45,16 +45,16 @@ class Word2Dim(object):
 
     def fit_transform_texts(self, train_texts, train_labels, tf=None):
         train_texts_plus = [(text, self.lang, i) for i, text in enumerate(train_texts)]
-        train_word_set = list()
+        train_word_set = defaultdict(int)
         print("doc count to process: ", str(len(train_texts_plus)))
 
-        pool_size = int(mp.cpu_count() / 2) - 2
-        # pool_size = min(3, int(mp.cpu_count() / 2) - 2)
+        # pool_size = int(mp.cpu_count() / 2) - 2
+        pool_size = min(3, int(mp.cpu_count() / 2) - 2)
         pool = mp.Pool(pool_size)
         train_texts_plus = pool.map(process_doc, train_texts_plus)
         pool.close()
-        pool.join()
-        # java.lang.OutOfMemoryError: Java heap space for large number of docs
+        # pool.join()
+
         # mp.set_start_method('spawn')
         # pool = mp.Pool(pool_size,  maxtasksperchild=1)
         # train_texts_plus = pool.imap(process_doc, train_texts_plus, chunksize=int(pool_size / 2))
@@ -83,12 +83,12 @@ class Word2Dim(object):
 
         print('process_doc, done!')
         for train_text in train_texts_plus:
-            train_word_set.extend(train_text)
+            train_word_set[train_text] += 1
 
         if tf:
-            train_word_set = set([v for v in train_word_set if train_word_set.count(v) >= tf])
+            train_word_set = set([v for v, c in train_word_set.items() if v >= tf])
         else:
-            train_word_set = set(train_word_set)
+            train_word_set = set(list(train_word_set.keys()))
         print('word_set, ready!')
         self.word_index = {v: i + 1 for i, v in enumerate(train_word_set)}
         # train_word_set.insert(0, ('<pad>', 'NAP'))
@@ -125,12 +125,12 @@ class Word2Dim(object):
         print("doc count to process: ", str(len(texts)))
         texts_plus = [(text, self.lang, i) for i, text in enumerate(texts)]
 
-        pool_size = int(mp.cpu_count() / 2) - 2
-        # pool_size = min(3, int(mp.cpu_count() / 2) - 1)
+        # pool_size = int(mp.cpu_count() / 2) - 2
+        pool_size = min(3, int(mp.cpu_count() / 2) - 2)
         pool = mp.Pool(pool_size)
         texts_plus = pool.map(process_doc, texts_plus)
         pool.close()
-        pool.join()
+        # pool.join()
 
         # pool_size = int(mp.cpu_count() / 2) - 2
 
