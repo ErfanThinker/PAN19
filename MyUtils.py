@@ -112,3 +112,27 @@ def extract_n_grams(texts, n, ft):
         if occurrences[i] >= ft:
             vocabulary.append(i)
     return vocabulary
+
+def shuffle_docs(texts, labels):
+    new_texts = []
+    new_labels = []
+    for ind, text in enumerate(texts):
+        if ind != len(texts) - 1:
+            tokenized_text = text.split(' ')
+            first_half = tokenized_text[:int(len(tokenized_text) / 2)]
+            second_half = tokenized_text[int(len(tokenized_text) / 2):]
+            remaining_text_from_this_writer = [text for index, text in enumerate(texts)
+                                               if index > ind and labels[index] == labels[ind]]
+            for other_text in remaining_text_from_this_writer:
+                tokenized_other_text = other_text.split(' ')
+                first_half_of_other_text = tokenized_other_text[:int(len(tokenized_other_text) / 2)]
+                second_half_of_other_text = tokenized_other_text[int(len(tokenized_other_text) / 2):]
+                new_texts.append(' '.join(first_half) + ' ' + ' '.join(first_half_of_other_text))
+                new_texts.append(' '.join(first_half) + ' ' + ' '.join(second_half_of_other_text))
+                new_texts.append(' '.join(second_half) + ' ' + ' '.join(first_half_of_other_text))
+                new_texts.append(' '.join(second_half) + ' ' + ' '.join(second_half_of_other_text))
+                new_labels.extend([labels[ind]] * 4)
+
+    new_texts.extend(texts)
+    new_labels.extend(labels)
+    return new_texts, new_labels

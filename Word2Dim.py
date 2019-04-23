@@ -6,7 +6,7 @@ from enum import Enum
 
 import numpy as np
 from sklearn import preprocessing
-
+from contextlib import closing
 from MyUtils import process_doc
 
 
@@ -14,6 +14,7 @@ class WordEmbeddingMode(Enum):
     Normal = 0,
     Scaled = 1,
     # NormalizedVectorized = 2
+
 
 class Word2Dim(object):
 
@@ -48,9 +49,23 @@ class Word2Dim(object):
         train_word_set = list()
         print("doc count to process: ", str(len(train_texts_plus)))
 
-        pool = mp.Pool(int(mp.cpu_count() / 2) - 1)
-        train_texts_plus = pool.map(process_doc, train_texts_plus)
-        pool.close()
+        pool_size = int(mp.cpu_count() / 2) - 1
+
+        # java.lang.OutOfMemoryError: Java heap space for large number of docs
+        # mp.set_start_method('spawn')
+        # pool = mp.Pool(pool_size,  maxtasksperchild=1)
+        # train_texts_plus = pool.map(process_doc, train_texts_plus, chunksize=1)
+        # pool.close()
+
+        temp = train_texts_plus[:]
+        train_texts_plus = []
+
+        for list_slice_ind in range(0, len(temp), pool_size):
+            # pool = mp.Pool(pool_size, maxtasksperchild=1)
+            with closing(mp.Pool(pool_size)) as p:
+                train_texts_plus.extend(p.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+            # pool.close()
+        assert len(train_texts_plus) == len(temp)
 
         print('process_doc, done!')
         for train_text in train_texts_plus:
@@ -60,7 +75,6 @@ class Word2Dim(object):
             train_word_set = set([v for v in train_word_set if train_word_set.count(v) >= tf])
         else:
             train_word_set = set(train_word_set)
-
 
         self.word_index = {v: i + 1 for i, v in enumerate(train_word_set)}
         # train_word_set.insert(0, ('<pad>', 'NAP'))
@@ -84,7 +98,6 @@ class Word2Dim(object):
         #     if np.mean(vector[:-1]) > 2:
         #         vector[-1] = np.sum(vector)
 
-
         self.word_embedding = word_embedding
 
         tokenized_and_indexed = []
@@ -97,9 +110,28 @@ class Word2Dim(object):
     def transform(self, texts):
         print("doc count to process: ", str(len(texts)))
         texts_plus = [(text, self.lang, i) for i, text in enumerate(texts)]
-        pool = mp.Pool(int(mp.cpu_count() / 2) - 1)
-        texts_plus = pool.map(process_doc, texts_plus)
-        pool.close()
+
+        pool_size = int(mp.cpu_count() / 2) - 1
+
+        # mp.set_start_method('spawn')
+        # pool = mp.Pool(pool_size, maxtasksperchild=1)
+        # texts_plus = pool.map(process_doc, texts_plus, chunksize=1)
+        # pool.close()
+
+        temp = texts_plus[:]
+        texts_plus = []
+
+        for list_slice_ind in range(0, len(temp), pool_size):
+            # pool = mp.Pool(pool_size, maxtasksperchild=1)
+            with closing(mp.Pool(pool_size)) as p:
+                texts_plus.extend(p.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+            # pool.close()
+        assert len(texts_plus) == len(temp)
+        #
+        #
+        # for tup in temp:
+        #     texts_plus.append(process_doc(tup))
+
         tokenized_and_indexed = []
 
         for text_plus in texts_plus:
