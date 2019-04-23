@@ -59,17 +59,27 @@ class Word2Dim(object):
         # java.lang.OutOfMemoryError: Java heap space for large number of docs
         # mp.set_start_method('spawn')
         # pool = mp.Pool(pool_size,  maxtasksperchild=1)
-        # train_texts_plus = pool.map(process_doc, train_texts_plus, chunksize=1)
+        # train_texts_plus = pool.imap(process_doc, train_texts_plus, chunksize=int(pool_size / 2))
         # pool.close()
 
         temp = train_texts_plus[:]
         train_texts_plus = []
 
-        for list_slice_ind in range(0, len(temp), pool_size):
-            pool = mp.Pool(pool_size, maxtasksperchild=1)
-            train_texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
-            pool.terminate()
-        assert len(train_texts_plus) == len(temp)
+        # pool = mp.Pool(pool_size, maxtasksperchild=1)
+        # it = pool.imap(process_doc, temp, chunksize=int(pool_size / 2))
+        # for res in it:
+        #     train_texts_plus.append(res)
+        # pool.close()
+        # temp = []
+
+        for doc in temp:
+            train_texts_plus.append(process_doc(doc))
+        #
+        # for list_slice_ind in range(0, len(temp), pool_size):
+        #     pool = mp.Pool(pool_size, maxtasksperchild=1)
+        #     train_texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+        #     pool.terminate()
+        # assert len(train_texts_plus) == len(temp)
 
         print('process_doc, done!')
         for train_text in train_texts_plus:
@@ -115,25 +125,29 @@ class Word2Dim(object):
         print("doc count to process: ", str(len(texts)))
         texts_plus = [(text, self.lang, self.tagger, i) for i, text in enumerate(texts)]
 
-        pool_size = int(mp.cpu_count() / 2) - 1
-
-        # mp.set_start_method('spawn')
-        # pool = mp.Pool(pool_size, maxtasksperchild=1)
-        # texts_plus = pool.map(process_doc, texts_plus, chunksize=1)
-        # pool.close()
+        # pool_size = int(mp.cpu_count() / 2) - 1
 
         temp = texts_plus[:]
         texts_plus = []
 
-        for list_slice_ind in range(0, len(temp), pool_size):
-            pool = mp.Pool(pool_size, maxtasksperchild=1)
-            texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
-            pool.terminate()
-        assert len(texts_plus) == len(temp)
+        # mp.set_start_method('spawn')
+        # pool = mp.Pool(pool_size, maxtasksperchild=1)
+        # it = pool.imap(process_doc, temp, chunksize=int(pool_size / 2))
+        # for res in it:
+        #     texts_plus.append(res)
+        # pool.close()
+        # temp = []
+
+
+        # for list_slice_ind in range(0, len(temp), pool_size):
+        #     pool = mp.Pool(pool_size, maxtasksperchild=1)
+        #     texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
+        #     pool.terminate()
+        # assert len(texts_plus) == len(temp)
         #
         #
-        # for tup in temp:
-        #     texts_plus.append(process_doc(tup))
+        for doc in temp:
+            texts_plus.append(process_doc(doc))
 
         tokenized_and_indexed = []
 
