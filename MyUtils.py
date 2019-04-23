@@ -67,7 +67,7 @@ def extract_words_plus_pos_tags(texts, lang):
     if lang in stanford_lang_models:
         import nltk.tag.stanford as stanford_tagger
         tagger = stanford_tagger.StanfordPOSTagger(stanford_res_path + stanford_lang_models[lang],
-                                                   path_to_jar=stanford_res_path + "stanford-postagger.jar")
+                                                   path_to_jar=stanford_res_path + "stanford-postagger.jar", java_options='-mx3g')
         results = tagger.tag(word_tokenize(texts, language=lang_map[lang]))
         del tagger
         del stanford_tagger

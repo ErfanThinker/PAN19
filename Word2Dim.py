@@ -7,6 +7,7 @@ import numpy as np
 from time import sleep
 from sklearn import preprocessing
 from MyUtils import process_doc
+import gc
 
 
 class WordEmbeddingMode(Enum):
@@ -77,7 +78,7 @@ class Word2Dim(object):
             train_texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
             pool.close()
             pool.join()
-            sleep(1)
+            gc.collect()
         assert len(train_texts_plus) == len(temp)
 
         print('process_doc, done!')
@@ -149,7 +150,7 @@ class Word2Dim(object):
             texts_plus.extend(pool.map(process_doc, temp[list_slice_ind:list_slice_ind + pool_size]))
             pool.close()
             pool.join()
-            sleep(1)
+            gc.collect()
         assert len(texts_plus) == len(temp)
         #
         #
