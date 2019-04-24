@@ -87,7 +87,7 @@ class Word2Dim(object):
                 train_word_set[tup] += 1
 
         if tf:
-            train_word_set = set([v for v, c in train_word_set.items() if v >= tf])
+            train_word_set = set([v for v, c in train_word_set.items() if c >= tf])
         else:
             train_word_set = set(list(train_word_set.keys()))
         print('word_set, ready!')
