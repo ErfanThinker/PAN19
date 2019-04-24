@@ -45,3 +45,5 @@ def shuffle_docs(texts, labels):
 # print(shuffle_docs(corpus, labels))
 for i in range(0,len(corpus),4):
     print(corpus[i:i+4])
+
+print(round(3.5))
