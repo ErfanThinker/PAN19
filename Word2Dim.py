@@ -83,7 +83,8 @@ class Word2Dim(object):
 
         print('process_doc, done!')
         for train_text in train_texts_plus:
-            train_word_set[train_text] += 1
+            for tup in train_text:
+                train_word_set[tup] += 1
 
         if tf:
             train_word_set = set([v for v, c in train_word_set.items() if v >= tf])
