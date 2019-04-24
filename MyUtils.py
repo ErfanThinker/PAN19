@@ -54,6 +54,7 @@ def read_files(path, label, gt_dict=None):
         label = label if gt_dict is None else gt_dict[file_name]
         texts.append((f.read(), label))
         f.close()
+        del f
     return texts
 
 
@@ -67,7 +68,8 @@ def extract_words_plus_pos_tags(texts, lang):
     if lang in stanford_lang_models:
         import nltk.tag.stanford as stanford_tagger
         tagger = stanford_tagger.StanfordPOSTagger(stanford_res_path + stanford_lang_models[lang],
-                                                   path_to_jar=stanford_res_path + "stanford-postagger.jar", java_options='-mx3g')
+                                                   path_to_jar=stanford_res_path + "stanford-postagger.jar",
+                                                   java_options='-mx3g')
         results = tagger.tag(word_tokenize(texts, language=lang_map[lang]))
         # del tagger
         # del stanford_tagger
@@ -120,6 +122,10 @@ def extract_n_grams(texts, n, ft):
 def shuffle_docs(texts, labels):
     new_texts = []
     new_labels = []
+
+    new_texts.extend(texts)
+    new_labels.extend(labels)
+
     for ind, text in enumerate(texts):
         if ind != len(texts) - 1:
             tokenized_text = text.split(' ')
@@ -137,6 +143,4 @@ def shuffle_docs(texts, labels):
                 new_texts.append(' '.join(second_half) + ' ' + ' '.join(second_half_of_other_text))
                 new_labels.extend([labels[ind]] * 4)
 
-    new_texts.extend(texts)
-    new_labels.extend(labels)
     return new_texts, new_labels
