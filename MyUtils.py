@@ -144,3 +144,45 @@ def shuffle_docs(texts, labels):
                 new_labels.extend([labels[ind]] * 4)
 
     return new_texts, new_labels
+
+
+def shuffle_docs2(texts, labels):
+    new_texts = []
+    new_labels = []
+    records_dict = defaultdict(list)
+    training_ratio = .7
+    class_size = 1000000
+    for i, l in enumerate(labels):
+        records_dict[l].append(texts[i])
+    # print(records_dict)
+    keep_sizes = []
+    for label, texts in records_dict.items():
+        keep_sizes.append(round(len(texts) * training_ratio))
+        new_texts.extend(texts[:keep_sizes[-1]])
+        new_labels.extend([label] * keep_sizes[-1])
+        class_size = min(class_size, keep_sizes[-1])
+
+    validation_index = len(new_labels)
+
+    for i, (label, texts) in enumerate(records_dict.items()):
+        bases = texts[keep_sizes[i]:]
+        # add original records
+        new_texts.extend(bases)
+        new_labels.extend([label] * len(bases))
+
+        # generate new docs based on unused training docs as bases and seen training docs
+        additionals = texts[:keep_sizes[i]]
+        for base in bases:
+            tokenized_text = base.split(' ')
+            for additional in additionals:
+                tokenized_other_text = additional.split(' ')
+                split_length = int(len(tokenized_other_text) / 3)
+                one_third_of_other_text = tokenized_other_text[:split_length]
+                two_third_of_other_text = tokenized_other_text[split_length:2 * split_length]
+                three_third_of_other_text = tokenized_other_text[2 * split_length:]
+                new_texts.append(' '.join(tokenized_text) + ' ' + ' '.join(one_third_of_other_text))
+                new_texts.append(' '.join(tokenized_text) + ' ' + ' '.join(two_third_of_other_text))
+                new_texts.append(' '.join(tokenized_text) + ' ' + ' '.join(three_third_of_other_text))
+                new_labels.extend([label] * 3)
+
+    return new_texts, new_labels, validation_index, class_size
