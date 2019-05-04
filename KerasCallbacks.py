@@ -1,9 +1,11 @@
 from keras import callbacks
+import os
 
-callbacks_list_neu_path = 'my_model_neu'
-callbacks_list_neu_ngrams_path = 'my_model_neu_ngrams'
-callbacks_list_neu_words_path = 'my_model_neu_words'
-callbacks_list_stacked_path = 'my_model_stacked'
+models_folder = '.' + os.sep + 'ms_models'
+callbacks_list_neu_path = models_folder + os.sep + 'my_model_neu'
+callbacks_list_neu_ngrams_path = models_folder + os.sep + 'my_model_neu_ngrams'
+callbacks_list_neu_words_path = models_folder + os.sep + 'my_model_neu_words'
+callbacks_list_stacked_path = models_folder + os.sep + 'my_model_stacked'
 
 callbacks_list_neu = [
     callbacks.EarlyStopping(
@@ -29,7 +31,7 @@ callbacks_list_neu_ngrams = [
         patience=50,
     ),
     callbacks.ModelCheckpoint(
-        filepath='my_model_neu_ngrams.h5',
+        filepath=callbacks_list_neu_ngrams_path + '.h5',
         monitor='val_loss',
         save_best_only=True,
     ),
@@ -47,7 +49,7 @@ callbacks_list_neu_words = [
         patience=50,
     ),
     callbacks.ModelCheckpoint(
-        filepath='my_model_neu_words.h5',
+        filepath=callbacks_list_neu_words_path + '.h5',
         monitor='val_loss',
         save_best_only=True,
     ),
@@ -79,7 +81,7 @@ callbacks_list_convnet = [
 
 callbacks_list_stacked = [
     callbacks.ModelCheckpoint(
-        filepath='my_model_stacked.h5',
+        filepath=callbacks_list_stacked_path + '.h5',
         monitor='val_loss',
         save_best_only=True,
     ),

@@ -37,6 +37,9 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
 
     candidates.sort()
 
+    clean_folder('.' + os.sep + 'ms_out_raw')
+    clean_folder('.' + os.sep + 'ms_models')
+
     # Building training set
     train_docs = []
     for candidate in candidates:
@@ -109,12 +112,12 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     ngram_model_capacity = [32, 64, 64]
     ngram_model = nm.build(X_scaled_train_data_ngrams.shape[1], num_of_classes, ngram_model_capacity, dropout=0.3)
     nm.fit_model(ngram_model, X_scaled_train_data_ngrams, X_scaled_val_data_ngrams, y_train, y_val,
-                 batch_size=class_size, callbacks=kc.callbacks_list_neu_ngrams, verbose=2)
+                 batch_size=class_size, callbacks=kc.callbacks_list_neu_ngrams, verbose=0)
 
     words_model_capacity = [32, 64, 64]
     words_model = nm.build(X_scaled_train_data_words.shape[1], num_of_classes, words_model_capacity, dropout=0.3)
     nm.fit_model(words_model, X_scaled_train_data_words, X_scaled_val_data_words, y_train, y_val,
-                 batch_size=class_size, callbacks=kc.callbacks_list_neu_words, verbose=2)
+                 batch_size=class_size, callbacks=kc.callbacks_list_neu_words, verbose=0)
 
     members = sm.load_all_models([kc.callbacks_list_neu_ngrams_path, kc.callbacks_list_neu_words_path])
     # define ensemble model
@@ -124,11 +127,11 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     sm.fit_stacked_model(stacked_model, [X_scaled_train_data_ngrams, X_scaled_train_data_words], y_train,
                          [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val,
                          callback_list=kc.callbacks_list_stacked, batch_size=class_size)
-    final_model = sm.load_saved_model(kc.callbacks_list_stacked_path + 'h5')
+    final_model = sm.load_saved_model(kc.callbacks_list_stacked_path + '.h5')
     # make predictions and evaluate
     yhat = sm.predict_stacked_model(final_model, [scaled_test_data_ngrams, scaled_test_data_words])
 
-    np.save(os.sep + 'ms_out_raw' + os.sep + problem, yhat)
+    np.save('.' + os.sep + 'ms_out_raw' + os.sep + problem, yhat)
 
     # Reject option (used in open-set cases)
     # count = 0
