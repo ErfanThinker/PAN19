@@ -125,7 +125,7 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
                          [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val)
     final_model = sm.load_model(kc.callbacks_list_stacked_path + 'h5')
     # make predictions and evaluate
-    yhat = sm.predict_stacked_model(stacked_model, [scaled_test_data_ngrams, scaled_test_data_words])
+    yhat = sm.predict_stacked_model(final_model, [scaled_test_data_ngrams, scaled_test_data_words])
 
     np.save(os.sep + 'ms_out_raw' + os.sep + problem, yhat)
 
