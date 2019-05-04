@@ -118,11 +118,12 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
 
     members = sm.load_all_models([kc.callbacks_list_neu_ngrams_path, kc.callbacks_list_neu_words_path])
     # define ensemble model
-    stacked_model = sm.define_stacked_model(members)
+    stacked_model = sm.define_stacked_model(members, num_of_classes)
 
     # fit stacked model on test dataset
     sm.fit_stacked_model(stacked_model, [X_scaled_train_data_ngrams, X_scaled_train_data_words], y_train,
-                         [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val)
+                         [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val,
+                         callback_list=kc.callbacks_list_stacked, batch_size=class_size)
     final_model = sm.load_model(kc.callbacks_list_stacked_path + 'h5')
     # make predictions and evaluate
     yhat = sm.predict_stacked_model(final_model, [scaled_test_data_ngrams, scaled_test_data_words])

@@ -22,7 +22,7 @@ def load_all_models(model_names_list):
 
 
 # define stacked model from multiple member input models
-def define_stacked_model(members, labels):
+def define_stacked_model(members, output_dim):
     # update all layers in all models to not be trainable
     for i in range(len(members)):
         model = members[i]
@@ -41,7 +41,7 @@ def define_stacked_model(members, labels):
     merge = concatenate(ensemble_outputs)
     hidden = layers.Dense(128, activation='relu')(merge)
     hidden = layers.Dropout(0.3)(hidden)
-    output = layers.Dense(len(set(labels)), activation='softmax')(hidden)
+    output = layers.Dense(output_dim, activation='softmax')(hidden)
     model = Model(inputs=ensemble_visible, outputs=output)
     # plot graph of ensemble
     #     plot_model(model, show_shapes=True, to_file='model_graph.png')
@@ -57,7 +57,7 @@ def fit_stacked_model(model, inputX, inputy, valX, valy, callback_list, batch_si
     # encode output data
     #     inputy_enc = to_categorical(inputy)
     # fit model
-    model.fit(inputX, inputy, validation_data=(valX, valy), batch_size=class_size,
+    model.fit(inputX, inputy, validation_data=(valX, valy), batch_size=batch_size,
               callbacks=callback_list, epochs=300, verbose=1)
 
 
