@@ -10,11 +10,11 @@ from keras import optimizers
 from numpy import argmax
 
 
-def build(data, labels, capacities, dropout):
+def build(dim, labels, capacities, dropout):
     neu_ml = Sequential()
 
     neu_ml.add(layers.Dense(capacities[0], activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.001, l2=0.001),
-                            input_shape=(data.shape[1],)))
+                            input_shape=(dim,)))
     neu_ml.add(layers.Dropout(dropout))
 
     for index, capacity in enumerate(capacities):

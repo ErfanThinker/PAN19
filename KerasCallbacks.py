@@ -1,12 +1,17 @@
 from keras import callbacks
 
+callbacks_list_neu_path = 'my_model_neu'
+callbacks_list_neu_ngrams_path = 'my_model_neu_ngrams'
+callbacks_list_neu_words_path = 'my_model_neu_words'
+callbacks_list_stacked_path = 'my_model_stacked'
+
 callbacks_list_neu = [
     callbacks.EarlyStopping(
         monitor='val_loss',
         patience=50,
     ),
     callbacks.ModelCheckpoint(
-        filepath='my_model_neu.h5',
+        filepath=callbacks_list_neu_path + '.h5',
         monitor='val_loss',
         save_best_only=True,
     ),

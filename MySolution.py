@@ -3,26 +3,28 @@ from __future__ import division
 
 from numpy.random import seed
 
+import KerasCallbacks as kc
 from KerasUtils import pad_seqs, encode_labels
 
 seed(1)
 from tensorflow import set_random_seed
 
 set_random_seed(1)
-from MyUtils import extract_n_grams
+from MyUtils import extract_n_grams, read_files, shuffle_docs
 
-from MyUtils import read_files, shuffle_docs
 from Word2Dim import Word2Dim
 import argparse
 import json
 import os
 import time
-
+import numpy as np
 from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer
 
 from MyUtils import clean_folder
 import neu_model as nm
+import stacked_model as sm
+
 
 def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     infoproblem = path + os.sep + problem + os.sep + 'problem-info.json'
@@ -105,11 +107,27 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     y_val = encode_labels(y_val)
 
     ngram_model_capacity = [32, 64, 64]
-    ngram_model = nm.build(X_scaled_train_data_ngrams, y_train, ngram_model_capacity, 0.3)
+    ngram_model = nm.build(X_scaled_train_data_ngrams.shape[1], y_train, ngram_model_capacity, dropout=0.3)
+    nm.fit_model(ngram_model, X_scaled_train_data_ngrams, X_scaled_val_data_ngrams, y_train, y_val,
+                 batch_size=class_size, callbacks=kc.callbacks_list_neu_ngrams, verbose=2)
 
+    words_model_capacity = [32, 64, 64]
+    words_model = nm.build(X_scaled_train_data_words.shape[1], y_train, words_model_capacity, dropout=0.3)
+    nm.fit_model(words_model, X_scaled_train_data_words, X_scaled_val_data_words, y_train, y_val,
+                 batch_size=class_size, callbacks=kc.callbacks_list_neu_words, verbose=2)
 
+    members = sm.load_all_models([kc.callbacks_list_neu_ngrams_path, kc.callbacks_list_neu_words_path])
+    # define ensemble model
+    stacked_model = sm.define_stacked_model(members)
 
+    # fit stacked model on test dataset
+    sm.fit_stacked_model(stacked_model, [X_scaled_train_data_ngrams, X_scaled_train_data_words], y_train,
+                         [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val)
+    final_model = sm.load_model(kc.callbacks_list_stacked_path + 'h5')
+    # make predictions and evaluate
+    yhat = sm.predict_stacked_model(stacked_model, [scaled_test_data_ngrams, scaled_test_data_words])
 
+    np.save(os.sep + 'ms_out_raw' + os.sep + problem, yhat)
 
     # Reject option (used in open-set cases)
     # count = 0
