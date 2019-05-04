@@ -59,7 +59,7 @@ def read_files(path, label, gt_dict=None):
 
 
 def process_doc(train_text):  # [(text, lang, i) , ... ]
-    print("Processing doc #", str(train_text[2] + 1))
+    # print("Processing doc #", str(train_text[2] + 1))
     return extract_words_plus_pos_tags(train_text[0], train_text[1])
 
 

@@ -27,6 +27,7 @@ import stacked_model as sm
 
 
 def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
+    print('Processing :', problem)
     infoproblem = path + os.sep + problem + os.sep + 'problem-info.json'
     candidates = []
     with open(infoproblem, 'r') as f:
