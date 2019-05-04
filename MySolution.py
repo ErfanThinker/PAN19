@@ -22,7 +22,7 @@ from sklearn import preprocessing
 from sklearn.feature_extraction.text import CountVectorizer
 
 from MyUtils import clean_folder
-
+import neu_model as nm
 
 def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     infoproblem = path + os.sep + problem + os.sep + 'problem-info.json'
@@ -104,6 +104,8 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     y_train = encode_labels(y_train)
     y_val = encode_labels(y_val)
 
+    ngram_model_capacity = [32, 64, 64]
+    ngram_model = nm.build(X_scaled_train_data_ngrams, y_train, ngram_model_capacity, 0.3)
 
 
 
