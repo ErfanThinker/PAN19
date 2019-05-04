@@ -6,6 +6,10 @@ from keras import layers, Model, optimizers
 from keras.layers.merge import concatenate
 
 
+def load_saved_model(model_file_path):
+    return load_model(model_file_path)
+
+
 # load models from file
 def load_all_models(model_names_list):
     all_models = list()
@@ -51,7 +55,7 @@ def define_stacked_model(members, output_dim):
 
 
 # fit a stacked model
-def fit_stacked_model(model, inputX, inputy, valX, valy, callback_list, batch_size, epochs= 300):
+def fit_stacked_model(model, inputX, inputy, valX, valy, callback_list, batch_size, epochs=300):
     # prepare input data
     #     X = [inputX for _ in range(len(model.input))]
     # encode output data

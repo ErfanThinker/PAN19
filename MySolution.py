@@ -124,7 +124,7 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     sm.fit_stacked_model(stacked_model, [X_scaled_train_data_ngrams, X_scaled_train_data_words], y_train,
                          [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val,
                          callback_list=kc.callbacks_list_stacked, batch_size=class_size)
-    final_model = sm.load_model(kc.callbacks_list_stacked_path + 'h5')
+    final_model = sm.load_saved_model(kc.callbacks_list_stacked_path + 'h5')
     # make predictions and evaluate
     yhat = sm.predict_stacked_model(final_model, [scaled_test_data_ngrams, scaled_test_data_words])
 
