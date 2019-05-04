@@ -49,7 +49,7 @@ class Word2Dim(object):
         print("doc count to process: ", str(len(train_texts_plus)))
 
         # pool_size = int(mp.cpu_count() / 2) - 2
-        pool_size = min(3, int(mp.cpu_count() / 2) - 2)
+        pool_size = min(6, int(mp.cpu_count() / 2) - 2)
         pool = mp.Pool(pool_size)
         train_texts_plus = pool.map(process_doc, train_texts_plus)
         pool.close()
@@ -127,7 +127,7 @@ class Word2Dim(object):
         texts_plus = [(text, self.lang, i) for i, text in enumerate(texts)]
 
         # pool_size = int(mp.cpu_count() / 2) - 2
-        pool_size = min(3, int(mp.cpu_count() / 2) - 2)
+        pool_size = min(6, int(mp.cpu_count() / 2) - 2)
         pool = mp.Pool(pool_size)
         texts_plus = pool.map(process_doc, texts_plus)
         pool.close()

@@ -49,7 +49,7 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     train_texts, train_labels = shuffle_docs(train_texts, train_labels)
     validation_size = len(train_texts) - initial_train_size
     class_size = int(initial_train_size / len(set(train_labels)))
-
+    num_of_classes = len(set(train_labels))
     # train_texts, train_labels, validation_start_index, class_size = shuffle_docs2(train_texts, train_labels)
 
     index_2_label_dict = {i: l for i, l in enumerate(set(train_labels))}
@@ -89,13 +89,13 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     scaled_test_data_words = max_abs_scaler.transform(
         w2d.get_texts_vectorized_and_normalized(test_tokenized_indexed)[:, 1:])
 
-    train_data = pad_seqs(train_tokenized_indexed, maxlen=maxlen)
+    # train_data = pad_seqs(train_tokenized_indexed, maxlen=maxlen)
 
-    test_data = pad_seqs(test_tokenized_indexed, maxlen=maxlen)
+    # test_data = pad_seqs(test_tokenized_indexed, maxlen=maxlen)
 
     train_val_split_index = initial_train_size
     y_train, y_val = train_labels[:train_val_split_index], train_labels[train_val_split_index:]
-    X_train, X_val = train_data[:train_val_split_index], train_data[train_val_split_index:]
+    # X_train, X_val = train_data[:train_val_split_index], train_data[train_val_split_index:]
     X_scaled_train_data_words, X_scaled_val_data_words = scaled_train_data_words[
                                                          :train_val_split_index], scaled_train_data_words[
                                                                                   train_val_split_index:]
@@ -107,12 +107,12 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     y_val = encode_labels(y_val)
 
     ngram_model_capacity = [32, 64, 64]
-    ngram_model = nm.build(X_scaled_train_data_ngrams.shape[1], y_train, ngram_model_capacity, dropout=0.3)
+    ngram_model = nm.build(X_scaled_train_data_ngrams.shape[1], num_of_classes, ngram_model_capacity, dropout=0.3)
     nm.fit_model(ngram_model, X_scaled_train_data_ngrams, X_scaled_val_data_ngrams, y_train, y_val,
                  batch_size=class_size, callbacks=kc.callbacks_list_neu_ngrams, verbose=2)
 
     words_model_capacity = [32, 64, 64]
-    words_model = nm.build(X_scaled_train_data_words.shape[1], y_train, words_model_capacity, dropout=0.3)
+    words_model = nm.build(X_scaled_train_data_words.shape[1], num_of_classes, words_model_capacity, dropout=0.3)
     nm.fit_model(words_model, X_scaled_train_data_words, X_scaled_val_data_words, y_train, y_val,
                  batch_size=class_size, callbacks=kc.callbacks_list_neu_words, verbose=2)
 

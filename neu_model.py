@@ -10,7 +10,7 @@ from keras import optimizers
 from numpy import argmax
 
 
-def build(dim, labels, capacities, dropout):
+def build(dim, num_of_classes, capacities, dropout):
     neu_ml = Sequential()
 
     neu_ml.add(layers.Dense(capacities[0], activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.001, l2=0.001),
@@ -23,7 +23,7 @@ def build(dim, labels, capacities, dropout):
                 layers.Dense(capacity, activation='relu', kernel_regularizer=regularizers.l1_l2(l1=0.001, l2=0.001)))
             neu_ml.add(layers.Dropout(dropout))
 
-    neu_ml.add(layers.Dense(len(set(labels)), activation='softmax'))
+    neu_ml.add(layers.Dense(num_of_classes, activation='softmax'))
 
     neu_ml.compile(optimizer=optimizers.Adam(lr=1e-4),
                    loss='categorical_crossentropy',
