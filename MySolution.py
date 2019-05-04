@@ -37,7 +37,6 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
 
     candidates.sort()
 
-    clean_folder('.' + os.sep + 'ms_out_raw')
     clean_folder('.' + os.sep + 'ms_models')
 
     # Building training set
@@ -164,6 +163,7 @@ def baseline(path, outpath, n=3, ft=5, pt=0.1):
             problems.append(attrib['problem-name'])
             language.append(attrib['language'])
 
+    clean_folder('.' + os.sep + 'ms_out_raw')
     for problem_index, problem in enumerate(problems):
         process_problem(problem, path, n, ft, language, problem_index, pt, outpath)
 
