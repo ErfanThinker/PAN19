@@ -92,7 +92,7 @@ def main():
     parser.add_argument('-o', type=str, help='Path to an output folder')
     parser.add_argument('-n', type=int, default=3, help='n-gram order (default=3)')
     parser.add_argument('-ft', type=int, default=5, help='frequency threshold (default=5)')
-    parser.add_argument('-pt', type=float, default=0.1, help='probability threshold for the reject option (default=0.1')
+    parser.add_argument('-pt', type=float, default=0.6, help='probability threshold for the reject option (default=0.1')
     args = parser.parse_args()
     if not args.i:
         args.i = '.\\pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'

@@ -1,5 +1,5 @@
 {
-    "overall_score": 0.578,
+    "overall_score": 0.579,
     "problems": [
         {
             "macro-f1": 0.695,
@@ -14,8 +14,8 @@
             "problem-name": "problem00002"
         },
         {
-            "macro-f1": 0.491,
-            "macro-precision": 0.63,
+            "macro-f1": 0.493,
+            "macro-precision": 0.637,
             "macro-recall": 0.44,
             "problem-name": "problem00003"
         },
@@ -26,8 +26,8 @@
             "problem-name": "problem00004"
         },
         {
-            "macro-f1": 0.473,
-            "macro-precision": 0.487,
+            "macro-f1": 0.471,
+            "macro-precision": 0.484,
             "macro-recall": 0.591,
             "problem-name": "problem00005"
         },
@@ -80,9 +80,9 @@
             "problem-name": "problem00013"
         },
         {
-            "macro-f1": 0.583,
-            "macro-precision": 0.528,
-            "macro-recall": 0.713,
+            "macro-f1": 0.598,
+            "macro-precision": 0.533,
+            "macro-recall": 0.741,
             "problem-name": "problem00014"
         },
         {
@@ -104,9 +104,9 @@
             "problem-name": "problem00017"
         },
         {
-            "macro-f1": 0.704,
-            "macro-precision": 0.749,
-            "macro-recall": 0.73,
+            "macro-f1": 0.703,
+            "macro-precision": 0.752,
+            "macro-recall": 0.724,
             "problem-name": "problem00018"
         },
         {
@@ -116,9 +116,9 @@
             "problem-name": "problem00019"
         },
         {
-            "macro-f1": 0.511,
-            "macro-precision": 0.528,
-            "macro-recall": 0.532,
+            "macro-f1": 0.513,
+            "macro-precision": 0.529,
+            "macro-recall": 0.537,
             "problem-name": "problem00020"
         }
     ]
