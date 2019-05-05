@@ -67,9 +67,6 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     test_texts = [text for i, (text, label) in enumerate(test_docs)]
     test_tokenized_with_pos, test_tokenized_indexed = w2d.transform(test_texts)
 
-    maxlen = len(max(train_tokenized_indexed, key=len))  # We will cut the texts after # words
-    embedding_dim = w2d.word_embedding.shape[1]
-
     vocabulary = extract_n_grams(train_docs, n, tf)
     vectorizer = CountVectorizer(analyzer='char', ngram_range=(n, n), lowercase=False, vocabulary=vocabulary)
 

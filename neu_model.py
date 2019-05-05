@@ -33,7 +33,7 @@ def build(dim, num_of_classes, capacities, dropout):
     return neu_ml
 
 
-def fit_model(model, train_data, val_data, train_labels, val_labels, batch_size, callbacks, verbose=1, epochs=500):
+def fit_model(model, train_data, val_data, train_labels, val_labels, batch_size, callbacks, verbose=1, epochs=100):
     model.fit(train_data, train_labels,
               validation_data=(val_data, val_labels),
               epochs=epochs,

@@ -55,14 +55,14 @@ def define_stacked_model(members, output_dim):
 
 
 # fit a stacked model
-def fit_stacked_model(model, inputX, inputy, valX, valy, callback_list, batch_size, epochs=300, verbose=0):
+def fit_stacked_model(model, inputX, inputy, valX, valy, callback_list, batch_size, epochs=100, verbose=0):
     # prepare input data
     #     X = [inputX for _ in range(len(model.input))]
     # encode output data
     #     inputy_enc = to_categorical(inputy)
     # fit model
     model.fit(inputX, inputy, validation_data=(valX, valy), batch_size=batch_size,
-              callbacks=callback_list, epochs=300, verbose=verbose)
+              callbacks=callback_list, epochs=epochs, verbose=verbose)
 
 
 # make a prediction with a stacked model

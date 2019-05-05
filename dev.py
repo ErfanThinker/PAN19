@@ -1,162 +1,177 @@
 # coding=utf-8
+from __future__ import division
+
+from numpy.random import seed
+from sklearn.metrics import accuracy_score, f1_score
+
+import KerasCallbacks as kc
+from KerasUtils import pad_seqs, encode_labels
+
+seed(1)
+from tensorflow import set_random_seed
+
+set_random_seed(1)
+from MyUtils import extract_n_grams, read_files, shuffle_docs
+
+from Word2Dim import Word2Dim
+import argparse
 import json
 import os
+import time
+import numpy as np
+from sklearn import preprocessing
+from sklearn.feature_extraction.text import CountVectorizer
 
-from keras import Model
-from keras.layers import Dense, concatenate
-from keras.models import load_model
-from keras.utils import to_categorical
-from numpy import dstack
-
-from MyUtils import clean_folder, read_files
-from Word2Dim import Word2Dim
-
-
-# load models from file
-def load_all_models(n_models):
-    all_models = list()
-    for i in range(n_models):
-        # define filename for this ensemble
-        filename = 'models/model_' + str(i + 1) + '.h5'
-        # load model from file
-        model = load_model(filename)
-        # add to list of members
-        all_models.append(model)
-        print('>loaded %s' % filename)
-    return all_models
+from MyUtils import clean_folder
+import neu_model as nm
+import stacked_model as sm
 
 
-# create stacked model input dataset as outputs from the ensemble
-def stacked_dataset(members, inputX):
-    stackX = None
-    for model in members:
-        # make prediction
-        yhat = model.predict(inputX, verbose=0)
-        # stack predictions into [rows, members, probabilities]
-        if stackX is None:
-            stackX = yhat
+def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
+    print('Processing :', problem)
+    infoproblem = path + os.sep + problem + os.sep + 'problem-info.json'
+    candidates = []
+    with open(infoproblem, 'r') as f:
+        fj = json.load(f)
+        unk_folder = fj['unknown-folder']
+        for attrib in fj['candidate-authors']:
+            candidates.append(attrib['author-name'])
+
+    candidates.sort()
+
+    #clean_folder('.' + os.sep + 'ms_models')
+
+    # Building training set
+    train_docs = []
+    for candidate in candidates:
+        train_docs.extend(read_files(path + os.sep + problem, candidate))
+    train_texts = [text for i, (text, label) in enumerate(train_docs)]
+    train_labels = [label for i, (text, label) in enumerate(train_docs)]
+    initial_train_size = len(train_labels)
+
+    # this will produce combination of train docs for validation purpose
+    train_texts, train_labels = shuffle_docs(train_texts, train_labels)
+    validation_size = len(train_texts) - initial_train_size
+    class_size = int(initial_train_size / len(set(train_labels)))
+    num_of_classes = len(set(train_labels))
+    # train_texts, train_labels, validation_start_index, class_size = shuffle_docs2(train_texts, train_labels)
+
+    index_2_label_dict = {i: l for i, l in enumerate(set(train_labels))}
+    label_2_index_dict = {l: i for i, l in enumerate(set(train_labels))}
+    train_labels = [label_2_index_dict[v] for v in train_labels]
+
+    w2d = Word2Dim(lang=language[problem_index])
+    train_tokenized_with_pos, train_tokenized_indexed = w2d.fit_transform_texts(train_texts, train_labels, tf=tf)
+
+    # building test set
+
+    ground_truth_file = path + os.sep + problem + os.sep + 'ground-truth.json'
+    gt = {}
+    with open(ground_truth_file, 'r') as f:
+        for attrib in json.load(f)['ground_truth']:
+            gt[attrib['unknown-text']] = attrib['true-author']
+
+    test_docs = read_files(path + os.sep + problem, unk_folder, gt)
+    test_texts = [text for i, (text, label) in enumerate(test_docs)]
+    test_labels = [label for i, (text, label) in enumerate(test_docs)]
+
+    test_tokenized_with_pos, test_tokenized_indexed = w2d.transform(test_texts)
+
+    vocabulary = extract_n_grams(train_docs, n, tf)
+    vectorizer = CountVectorizer(analyzer='char', ngram_range=(n, n), lowercase=False, vocabulary=vocabulary)
+
+    n_gram_train_data = vectorizer.fit_transform(train_texts)
+    n_gram_train_data = n_gram_train_data.astype(float)
+    for i, v in enumerate(train_texts):
+        n_gram_train_data[i] = n_gram_train_data[i] / len(train_texts[i])
+
+    n_gram_test_data = vectorizer.transform(test_texts)
+    n_gram_test_data = n_gram_test_data.astype(float)
+    for i, v in enumerate(test_texts):
+        n_gram_test_data[i] = n_gram_test_data[i] / len(test_texts[i])
+
+    max_abs_scaler = preprocessing.MaxAbsScaler()
+    scaled_train_data_ngrams = max_abs_scaler.fit_transform(n_gram_train_data)
+    scaled_test_data_ngrams = max_abs_scaler.transform(n_gram_test_data)
+    max_abs_scaler = preprocessing.MaxAbsScaler()
+    scaled_train_data_words = max_abs_scaler.fit_transform(
+        w2d.get_texts_vectorized_and_normalized(train_tokenized_indexed)[:, 1:])
+    scaled_test_data_words = max_abs_scaler.transform(
+        w2d.get_texts_vectorized_and_normalized(test_tokenized_indexed)[:, 1:])
+
+    # train_data = pad_seqs(train_tokenized_indexed, maxlen=maxlen)
+
+    # test_data = pad_seqs(test_tokenized_indexed, maxlen=maxlen)
+
+    train_val_split_index = initial_train_size
+    y_train, y_val = train_labels[:train_val_split_index], train_labels[train_val_split_index:]
+    # X_train, X_val = train_data[:train_val_split_index], train_data[train_val_split_index:]
+    X_scaled_train_data_words, X_scaled_val_data_words = scaled_train_data_words[
+                                                         :train_val_split_index], scaled_train_data_words[
+                                                                                  train_val_split_index:]
+    X_scaled_train_data_ngrams, X_scaled_val_data_ngrams = scaled_train_data_ngrams[
+                                                           :train_val_split_index], scaled_train_data_ngrams[
+                                                                                    train_val_split_index:]
+
+    y_train = encode_labels(y_train)
+    y_val = encode_labels(y_val)
+
+    # ngram_model_capacity = [32, 64, 64]
+    # ngram_model = nm.build(X_scaled_train_data_ngrams.shape[1], num_of_classes, ngram_model_capacity, dropout=0.3)
+    # nm.fit_model(ngram_model, X_scaled_train_data_ngrams, X_scaled_val_data_ngrams, y_train, y_val,
+    #              batch_size=class_size, callbacks=kc.get_callbacks_list_neu_ngrams(), verbose=1)
+    #
+    # words_model_capacity = [32, 64, 64]
+    # words_model = nm.build(X_scaled_train_data_words.shape[1], num_of_classes, words_model_capacity, dropout=0.3)
+    # nm.fit_model(words_model, X_scaled_train_data_words, X_scaled_val_data_words, y_train, y_val,
+    #              batch_size=class_size, callbacks=kc.get_callbacks_list_neu_words(), verbose=1)
+    #
+    members = sm.load_all_models([kc.callbacks_list_neu_ngrams_path, kc.callbacks_list_neu_words_path])
+    # # members = [ngram_model, words_model]
+    # # define ensemble model
+    stacked_model = sm.define_stacked_model(members, num_of_classes)
+    #
+    # # fit stacked model on test dataset
+    sm.fit_stacked_model(stacked_model, [X_scaled_train_data_ngrams, X_scaled_train_data_words], y_train,
+                         [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val,
+                         callback_list=kc.get_callbacks_list_stacked(), batch_size=class_size, verbose=1)
+    final_model = sm.load_saved_model(kc.callbacks_list_stacked_path + '.h5')
+    final_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    # make predictions and evaluate
+    yhat = sm.predict_stacked_model(final_model, [scaled_test_data_ngrams, scaled_test_data_words])
+    predictions = np.argmax(yhat, axis=1)
+    predictions = [index_2_label_dict[v] for v in predictions]
+
+    for ind, v in enumerate(predictions):
+        if test_labels[ind] in label_2_index_dict.keys():
+            test_labels[ind] = label_2_index_dict[test_labels[ind]]
         else:
-            stackX = dstack((stackX, yhat))
-    # flatten predictions to [rows, members x probabilities]
-    stackX = stackX.reshape((stackX.shape[0], stackX.shape[1] * stackX.shape[2]))
-    return stackX
+            test_labels[ind] = len(label_2_index_dict.keys())
 
 
-def freeze_layers(models):
-    # update all layers in all models to not be trainable
-    for i in range(len(models)):
-        model = models[i]
-        for layer in model.layers:
-            # make not trainable
-            layer.trainable = False
-            # rename to avoid 'unique layer name' issue
-            layer.name = 'ensemble_' + str(i + 1) + '_' + layer.name
 
 
-# define stacked model from multiple member input models
-def define_stacked_model(members):
-    # update all layers in all models to not be trainable
-    for i in range(len(members)):
-        model = members[i]
-        for layer in model.layers:
-            # make not trainable
-            layer.trainable = False
-            # rename to avoid 'unique layer name' issue
-            layer.name = 'ensemble_' + str(i + 1) + '_' + layer.name
-    # define multi-headed input
-    ensemble_visible = [model.input for model in members]
-    # concatenate merge output from each model
-    ensemble_outputs = [model.output for model in members]
-    merge = concatenate(ensemble_outputs)
-    hidden = Dense(10, activation='relu')(merge)
-    output = Dense(3, activation='softmax')(hidden)
-    model = Model(inputs=ensemble_visible, outputs=output)
-    # plot graph of ensemble
-    # plot_model(model, show_shapes=True, to_file='model_graph.png')
-    # compile
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    return model
+    # Reject option (used in open-set cases)
+    count = 0
+    for i, p in enumerate(predictions):
+        sproba = sorted(yhat[i], reverse=True)
+        if sproba[0] - sproba[1] < pt:
+            predictions[i] = u'<UNK>'
+            count = count + 1
+    print('\t', count, 'texts left unattributed')
+
+    acc = accuracy_score(test_labels, predictions)
+    print('Stacked Test Accuracy: %.3f' % acc)
+    f_measure = f1_score(test_labels, predictions, average='macro')
+
+    print('my_model_neu Test f-measure: %.3f' % f_measure)
 
 
-# fit a stacked model
-def fit_stacked_model(model, inputX, inputy):
-    # prepare input data
-    X = [inputX for _ in range(len(model.input))]
-    # encode output data
-    inputy_enc = to_categorical(inputy)
-    # fit model
-    model.fit(X, inputy_enc, epochs=300, verbose=0)
-
-
-def do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim,
-                   maxlen):
-    from keras.layers import Embedding, Flatten, Dense
-    from keras.models import Sequential
-    from keras.optimizers import RMSprop
-    from keras.utils import to_categorical
-    from keras_preprocessing.sequence import pad_sequences
-    import matplotlib.pyplot as plt
-    # from sklearn.model_selection import train_test_split
-
-    train_data = pad_sequences(train_tokenized_indexed, maxlen=maxlen)
-
-    test_data = pad_sequences(test_tokenized_indexed, maxlen=maxlen)
-
-    X_train, X_val, y_train, y_val = train_data, test_data, to_categorical(train_labels), to_categorical(test_labels)
-    # X_train, X_val, y_train, y_val = train_test_split(train_data, train_labels,
-    #                                                   test_size=0.28, random_state=2019,
-    #                                                   stratify=train_labels)
-
-    # y_train = to_categorical(y_train)
-    # y_val = to_categorical(y_val)
-
-    model = Sequential()
-    model.add(Embedding(w2d.word_embedding.shape[0], embedding_dim, input_length=maxlen))
-    model.add(Flatten())
-    model.add(Dense(32, activation='relu'))
-    model.add(Dense(len(set(train_labels)), activation='softmax'))
-    model.summary()
-
-    # model.layers[0].set_weights([w2d.word_embedding])
-    # model.layers[0].trainable = False
-
-    model.compile(optimizer=RMSprop(lr=0.001),
-                  loss='categorical_crossentropy',
-                  metrics=['acc'])
-    history = model.fit(X_train, y_train,
-                        validation_data=(X_val, y_val),
-                        epochs=120,
-                        batch_size=1)
-
-    acc = history.history['acc']
-    val_acc = history.history['val_acc']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-
-    epochs = range(1, len(acc) + 1)
-
-    plt.plot(epochs, acc, 'bo', label='Training acc')
-    plt.plot(epochs, val_acc, 'b', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.legend()
-
-    plt.figure()
-
-    plt.plot(epochs, loss, 'bo', label='Training loss')
-    plt.plot(epochs, val_loss, 'b', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend()
-
-    plt.show()
-
-
-def main():
-    dataset_path = '.' + os.sep + 'pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
-    outpath = '.' + os.sep + 'dev_out'
-
+def baseline(path, outpath, n=3, ft=5, pt=0.1):
+    start_time = time.time()
     clean_folder(outpath)
-
-    infocollection = dataset_path + os.sep + 'collection-info.json'
+    # Reading information about the collection
+    infocollection = path + os.sep + 'collection-info.json'
     problems = []
     language = []
     with open(infocollection, 'r') as f:
@@ -164,53 +179,32 @@ def main():
             problems.append(attrib['problem-name'])
             language.append(attrib['language'])
 
-    for index, problem in enumerate(problems):
-        infoproblem = dataset_path + os.sep + problem + os.sep + 'problem-info.json'
-        candidates = []
-        with open(infoproblem, 'r') as f:
-            fj = json.load(f)
-            unk_folder = fj['unknown-folder']
-            for attrib in fj['candidate-authors']:
-                candidates.append(attrib['author-name'])
+    clean_folder('.' + os.sep + 'ms_out_raw')
+    for problem_index, problem in enumerate(problems):
+        process_problem(problem, path, n, ft, language, problem_index, pt, outpath)
 
-        candidates.sort()
-        # Building training set
-        train_docs = []
-        for candidate in candidates:
-            train_docs.extend(read_files(dataset_path + os.sep + problem, candidate))
-        train_texts = [text for i, (text, label) in enumerate(train_docs)]
-        train_labels = [label for i, (text, label) in enumerate(train_docs)]
-        index_2_label_dict = {i: l for i, l in enumerate(set(train_labels))}
-        label_2_index_dict = {l: i for i, l in enumerate(set(train_labels))}
-        train_labels = [label_2_index_dict[v] for v in train_labels]
-        w2d = Word2Dim()
-        train_tokenized_with_pos, train_tokenized_indexed = w2d.fit_transform_texts(train_texts, train_labels,
-                                                                                    language[index])
+    print('elapsed time:', time.time() - start_time)
 
-        maxlen = len(max(train_tokenized_indexed, key=len))  # We will cut the texts after # words
-        embedding_dim = w2d.word_embedding.shape[1]
 
-        # preparing test set
-        ground_truth_file = dataset_path + os.sep + problem + os.sep + 'ground-truth.json'
-        gt = {}
-        with open(ground_truth_file, 'r') as f:
-            for attrib in json.load(f)['ground_truth']:
-                gt[attrib['unknown-text']] = attrib['true-author']
+def main():
+    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='PAN-19 Baseline Authorship Attribution Method')
+    parser.add_argument('-i', type=str, help='Path to the main folder of a collection of attribution problems')
+    parser.add_argument('-o', type=str, help='Path to an output folder')
+    parser.add_argument('-n', type=int, default=3, help='n-gram order (default=3)')
+    parser.add_argument('-ft', type=int, default=5, help='frequency threshold (default=5)')
+    parser.add_argument('-pt', type=float, default=0.1, help='probability threshold for the reject option (default=0.1')
+    args = parser.parse_args()
+    if not args.i:
+        args.i = '.\\pan19-cross-domain-authorship-attribution-training-dataset-2019-01-23'
+        # print('ERROR: The input folder is required')
+        # parser.exit(1)
+    if not args.o:
+        args.o = '.\\ms_out'
+        # print('ERROR: The output folder is required')
+        # parser.exit(1)
 
-        test_docs = read_files(dataset_path + os.sep + problem, unk_folder, gt)
-        test_texts = [text for i, (text, label) in enumerate(test_docs)]
-        test_labels = [label for i, (text, label) in enumerate(test_docs)]
-
-        # Filter validation to known authors
-        test_texts = [text for i, (text, label) in enumerate(test_docs) if label in label_2_index_dict.keys()]
-        test_labels = [label for i, (text, label) in enumerate(test_docs) if label in label_2_index_dict.keys()]
-
-        test_labels = [label_2_index_dict[v] for v in test_labels]
-
-        test_tokenized_with_pos, test_tokenized_indexed = w2d.transform(test_texts)
-
-        do_keras_stuff(train_tokenized_indexed, test_tokenized_indexed, train_labels, test_labels, w2d, embedding_dim,
-                       maxlen)
+    baseline(args.i, args.o, args.n, args.ft, args.pt)
 
 
 if __name__ == '__main__':
