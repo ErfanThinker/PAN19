@@ -112,21 +112,22 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     ngram_model_capacity = [32, 64, 64]
     ngram_model = nm.build(X_scaled_train_data_ngrams.shape[1], num_of_classes, ngram_model_capacity, dropout=0.3)
     nm.fit_model(ngram_model, X_scaled_train_data_ngrams, X_scaled_val_data_ngrams, y_train, y_val,
-                 batch_size=class_size, callbacks=kc.callbacks_list_neu_ngrams, verbose=0)
+                 batch_size=class_size, callbacks=kc.get_callbacks_list_neu_ngrams(), verbose=0)
 
     words_model_capacity = [32, 64, 64]
     words_model = nm.build(X_scaled_train_data_words.shape[1], num_of_classes, words_model_capacity, dropout=0.3)
     nm.fit_model(words_model, X_scaled_train_data_words, X_scaled_val_data_words, y_train, y_val,
-                 batch_size=class_size, callbacks=kc.callbacks_list_neu_words, verbose=0)
+                 batch_size=class_size, callbacks=kc.get_callbacks_list_neu_words(), verbose=0)
 
     members = sm.load_all_models([kc.callbacks_list_neu_ngrams_path, kc.callbacks_list_neu_words_path])
+    # members = [ngram_model, words_model]
     # define ensemble model
     stacked_model = sm.define_stacked_model(members, num_of_classes)
 
     # fit stacked model on test dataset
     sm.fit_stacked_model(stacked_model, [X_scaled_train_data_ngrams, X_scaled_train_data_words], y_train,
                          [X_scaled_val_data_ngrams, X_scaled_val_data_words], y_val,
-                         callback_list=kc.callbacks_list_stacked, batch_size=class_size)
+                         callback_list=kc.get_callbacks_list_stacked(), batch_size=class_size)
     final_model = sm.load_saved_model(kc.callbacks_list_stacked_path + '.h5')
     # make predictions and evaluate
     yhat = sm.predict_stacked_model(final_model, [scaled_test_data_ngrams, scaled_test_data_words])
