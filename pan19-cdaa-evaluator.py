@@ -179,8 +179,8 @@ def main():
         # print('ERROR: The collection path is required')
         # parser.exit(1)
     if not args.a:
-        # args.a = '.' + os.sep + 'ms_out'
-        args.a = '.' + os.sep + 'baseline_svm_out'
+        args.a = '.' + os.sep + 'ms_out'
+        # args.a = '.' + os.sep + 'baseline_svm_out'
         # args.a = './baseline_compression_out'
         # print('ERROR: The answers folder is required')
         # parser.exit(1)

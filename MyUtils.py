@@ -46,7 +46,7 @@ class LanguageIndex():
 def read_files(path, label, gt_dict=None):
     # Reads all text files located in the 'path' and assigns them to 'label' class
     files = glob.glob(path + os.sep + label + os.sep + '*.txt')
-    files.sort()
+    # files.sort()
     texts = []
     for i, v in enumerate(files):
         f = codecs.open(v, 'r', encoding='utf-8')
@@ -54,7 +54,6 @@ def read_files(path, label, gt_dict=None):
         label = label if gt_dict is None else gt_dict[file_name]
         texts.append((f.read(), label))
         f.close()
-        del f
     return texts
 
 
