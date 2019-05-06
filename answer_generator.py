@@ -59,7 +59,6 @@ def process_problem(problem, path, n, tf, language, problem_index, pt, outpath):
     # Saving output data
     out_data = []
     unk_filelist = glob.glob(path + os.sep + problem + os.sep + unk_folder + os.sep + '*.txt')
-    unk_filelist.sort()
     pathlen = len(path + os.sep + problem + os.sep + unk_folder + os.sep)
     for i, v in enumerate(predictions):
         out_data.append({'unknown-text': unk_filelist[i][pathlen:], 'predicted-author': v})
